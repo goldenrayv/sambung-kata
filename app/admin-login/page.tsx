@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 
 async function adminLogin(formData: FormData) {
   "use server";
-  const secret = formData.get("secret") as string;
+  const secret = (formData.get("secret") as string)?.trim();
+  const adminSecret = (process.env.ADMIN_SECRET || "").trim();
 
-  if (secret && secret === process.env.ADMIN_SECRET) {
+  if (secret && secret === adminSecret) {
     const cookieStore = await cookies();
     cookieStore.set("admin_session", secret, {
       httpOnly: true,

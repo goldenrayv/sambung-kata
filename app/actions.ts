@@ -27,7 +27,7 @@ export async function getWordCount(): Promise<number> {
 /** Accepts FormData directly — usable as form action= with no inline "use server" closure.
  *  Returns void to satisfy Next.js form action type requirements. */
 export async function addWord(formData: FormData): Promise<void> {
-  const word = (formData.get("word") as string)?.toLowerCase().trim();
+  const word = (formData.get("word") as string)?.toUpperCase().trim();
   if (!word) return;
 
   try {

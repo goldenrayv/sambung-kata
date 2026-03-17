@@ -26,7 +26,7 @@ async function main() {
     let count = 0;
 
     for (let i = 0; i < data.length; i += batchSize) {
-      const batch = data.slice(i, i + batchSize).map((word) => ({ word }));
+      const batch = data.slice(i, i + batchSize).map((word) => ({ word: word.toUpperCase() }));
       await prisma.word.createMany({ data: batch });
       count += batch.length;
       console.log(`Inserted ${count}/${data.length}...`);

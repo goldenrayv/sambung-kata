@@ -25,19 +25,29 @@ export async function GET(req: Request) {
 
   // --- Search ---
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") ?? "").toLowerCase().trim();
+  const q = (searchParams.get("q") ?? "").trim();
   const mode = searchParams.get("mode") ?? "contains";
 
   if (!q) return NextResponse.json([]);
 
-  // Build the Prisma where clause. Words are stored lowercase, q is lowercased.
-  // SQLite LIKE (used by Prisma) is case-insensitive for ASCII – perfect for Indonesian.
-  const textFilter =
-    mode === "prefix"
-      ? { startsWith: q }
-      : mode === "suffix"
-      ? { endsWith: q }
-      : { contains: q };
+  // Build the Prisma where clause.
+  // Use Prisma's `mode: "insensitive"` for case-insensitive search.
+  const textFilter: {
+    startsWith?: string;
+    endsWith?: string;
+    contains?: string;
+    mode?: "insensitive";
+  } = {};
+
+  // Handle search query with uppercase normalization
+  if (mode === "prefix") {
+    textFilter.startsWith = q;
+  } else if (mode === "suffix") {
+    textFilter.endsWith = q;
+  } else {
+    textFilter.contains = q;
+  }
+  textFilter.mode = "insensitive"; // Apply case-insensitive mode
 
   const results = await prisma.word.findMany({
     where: { isActive: true, word: textFilter },

@@ -85,8 +85,8 @@ export default async function AdminWordsPage({
                           key={word.id}
                           className="hover:bg-white/5 transition-colors border-white/5"
                         >
-                          <TableCell className="px-6 py-4 font-medium tracking-wide text-white">
-                            {word.word}
+                          <TableCell className="px-6 py-4 font-medium tracking-widest text-white uppercase">
+                            {word.word.toUpperCase()}
                           </TableCell>
                           <TableCell className="px-6 py-4">
                             {word.isActive ? (

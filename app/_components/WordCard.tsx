@@ -28,11 +28,11 @@ export default function WordCard({ word, search, searchMode }: Props) {
       }`}
     >
       <span
-        className={`text-sm tracking-wide transition-colors ${
+        className={`text-sm tracking-widest transition-colors uppercase ${
           cue ? "text-rose-100 font-semibold" : "text-neutral-300 group-hover:text-white"
         }`}
       >
-        {word}
+        {word.toUpperCase()}
       </span>
       {cue && (
         <div

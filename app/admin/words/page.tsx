@@ -20,10 +20,21 @@ export default async function AdminWordsPage({
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
 
-  const [words, totalCount] = await Promise.all([
-    getAllWordsAdmin(page, PAGE_SIZE),
-    getAllWordCount(),
-  ]);
+  let words: any[] = [];
+  let totalCount = 0;
+  let error: string | null = null;
+
+  try {
+    const [fetchedWords, count] = await Promise.all([
+      getAllWordsAdmin(page, PAGE_SIZE),
+      getAllWordCount(),
+    ]);
+    words = fetchedWords;
+    totalCount = count;
+  } catch (e: any) {
+    error = e.message || "Unknown database error";
+    console.error("Prisma Error:", e);
+  }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -40,6 +51,14 @@ export default async function AdminWordsPage({
               {totalCount.toLocaleString()} total words &mdash; page {page} of {totalPages}
             </p>
           </header>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm font-mono whitespace-pre-wrap">
+              <strong>Database Connection Error:</strong><br />
+              {error}
+              <p className="mt-2 text-xs text-neutral-500">Check DATABASE_URL in Vercel settings and ensure the database is reachable.</p>
+            </div>
+          )}
 
           <section className="space-y-6">
             <h2 className="text-xl font-semibold flex items-center gap-2 text-white font-heading">

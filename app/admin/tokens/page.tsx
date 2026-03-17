@@ -1,4 +1,5 @@
 import { getUsers, deleteUser } from "@/app/actions";
+import { User } from "@prisma/client";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { TokenForm } from "@/components/token-form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +10,15 @@ import { Trash2, Key } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function AdminTokensPage() {
-  const users = await getUsers();
+  let users: User[] = [];
+  let error: string | null = null;
+
+  try {
+    users = await getUsers();
+  } catch (e: any) {
+    error = e.message || "Unknown database error";
+    console.error("Prisma Error:", e);
+  }
 
   return (
     <div className="flex min-h-screen bg-neutral-950 text-white">
@@ -22,6 +31,14 @@ export default async function AdminTokensPage() {
             </h1>
             <p className="text-neutral-400 mt-2 text-sm">Issue and revoke user access keys.</p>
           </header>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm font-mono whitespace-pre-wrap">
+              <strong>Database Connection Error:</strong><br />
+              {error}
+              <p className="mt-2 text-xs text-neutral-500">Check DATABASE_URL in Vercel settings and ensure the database is reachable.</p>
+            </div>
+          )}
 
           <section className="space-y-6">
             <h2 className="text-xl font-semibold flex items-center gap-2 text-white font-heading">

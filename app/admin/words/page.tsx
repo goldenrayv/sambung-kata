@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle, XCircle, Plus, Book, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 const PAGE_SIZE = 50;
 
 export default async function AdminWordsPage({

@@ -1,0 +1,18 @@
+{
+    "mcpServers": {
+        "next-devtools": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "next-devtools-mcp@latest"
+            ]
+        },
+        "shadcn-ui": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "shadcn-ui-mcp@latest"
+            ]
+        }
+    }
+}

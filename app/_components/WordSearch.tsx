@@ -38,7 +38,7 @@ export default function WordSearch({ token, wordCount }: Props) {
       } finally {
         setIsSearching(false);
       }
-    }, 150);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [search, searchMode, token]);

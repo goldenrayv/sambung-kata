@@ -41,21 +41,21 @@ export default async function AdminLoginPage({
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight font-heading">Admin Portal</h1>
-          <p className="text-neutral-400">Enter the admin secret to access the dashboard.</p>
+          <p className="text-white">Enter the admin secret to access the dashboard.</p>
         </div>
 
         <Card className="bg-neutral-900/50 backdrop-blur-xl border-white/10 shadow-2xl rounded-3xl overflow-hidden">
           <CardContent className="p-8 space-y-6">
             <form action={adminLogin} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-neutral-400 ml-1">Admin Secret</label>
+                <label className="text-sm font-medium text-white ml-1">Admin Secret</label>
                 <div className="relative group">
                   <Input
                     name="secret"
                     type="password"
                     placeholder="••••••••••••"
                     autoFocus
-                    className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-neutral-600 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
+                    className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-white/40 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
                     required
                   />
                   <Button

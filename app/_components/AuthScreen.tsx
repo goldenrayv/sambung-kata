@@ -28,7 +28,7 @@ export default function AuthScreen({
             <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-4xl font-bold tracking-tight font-heading">Access Protected</h1>
-          <p className="text-neutral-400">
+          <p className="text-white">
             Please enter your unique access token to use the Sambung Kata cheat sheet.
           </p>
         </div>
@@ -36,14 +36,14 @@ export default function AuthScreen({
         <Card className="bg-neutral-900/50 backdrop-blur-xl border-white/10 shadow-2xl overflow-hidden rounded-3xl">
           <CardContent className="p-8 space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-neutral-400 ml-1">Access Token</label>
+              <label className="text-sm font-medium text-white ml-1">Access Token</label>
               <div className="relative group">
                 <Input
                   type="password"
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
                   placeholder="sk_••••••••••••"
-                  className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-neutral-600 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
+                  className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-white/40 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
                   onKeyDown={(e) => e.key === "Enter" && onAuth(tokenInput)}
                   disabled={loading}
                 />
@@ -65,7 +65,7 @@ export default function AuthScreen({
               </div>
             )}
 
-            <p className="text-xs text-center text-neutral-500">
+            <p className="text-xs text-center text-white/60">
               Contact your administrator to request a new key.
             </p>
           </CardContent>

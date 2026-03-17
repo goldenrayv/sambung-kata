@@ -74,7 +74,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 font-sans p-4 md:p-6 flex flex-col items-center">
+    <main className="min-h-screen bg-neutral-950 text-white selection:bg-rose-500/30 font-sans p-4 md:p-6 w-full px-4 md:px-8">
       {/* Background glow decorators */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-rose-500/10 rounded-full blur-[120px]" />

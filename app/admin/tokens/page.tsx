@@ -29,14 +29,14 @@ export default async function AdminTokensPage() {
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text inline-block font-heading">
               Access Tokens
             </h1>
-            <p className="text-neutral-400 mt-2 text-sm">Issue and revoke user access keys.</p>
+            <p className="text-white mt-2 text-sm">Issue and revoke user access keys.</p>
           </header>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm font-mono whitespace-pre-wrap">
               <strong>Database Connection Error:</strong><br />
               {error}
-              <p className="mt-2 text-xs text-neutral-500">Check DATABASE_URL in Vercel settings and ensure the database is reachable.</p>
+              <p className="mt-2 text-xs text-white/60">Check DATABASE_URL in Vercel settings and ensure the database is reachable.</p>
             </div>
           )}
 
@@ -52,7 +52,7 @@ export default async function AdminTokensPage() {
               <CardContent className="p-0 overflow-x-auto">
                 <Table className="w-full text-left">
                   <TableHeader>
-                    <TableRow className="border-b border-white/5 bg-white/5 text-neutral-400 text-sm uppercase tracking-wider hover:bg-transparent">
+                    <TableRow className="border-b border-white/5 bg-white/5 text-white text-sm uppercase tracking-wider hover:bg-transparent">
                       <TableHead className="px-6 py-4">User</TableHead>
                       <TableHead className="px-6 py-4">Token (hashed)</TableHead>
                       <TableHead className="px-6 py-4">Expires</TableHead>
@@ -71,7 +71,7 @@ export default async function AdminTokensPage() {
                           <TableCell className="px-6 py-4 text-rose-400 font-mono text-xs">
                             {user.token.slice(0, 16)}…
                           </TableCell>
-                          <TableCell className="px-6 py-4 text-neutral-400 text-sm">
+                          <TableCell className="px-6 py-4 text-white text-sm">
                             {user.expiresAt.toISOString().split("T")[0]}
                           </TableCell>
                           <TableCell className="px-6 py-4">
@@ -80,7 +80,7 @@ export default async function AdminTokensPage() {
                                 type="submit"
                                 variant="ghost"
                                 size="icon"
-                                className="text-neutral-500 hover:text-red-500 transition-colors p-2"
+                                className="text-white hover:text-red-500 transition-colors p-2"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>

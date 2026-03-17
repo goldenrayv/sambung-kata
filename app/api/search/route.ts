@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   // --- Search ---
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
-  const mode = searchParams.get("mode") ?? "contains";
+  const mode = searchParams.get("mode") ?? "prefix";
 
   if (!q) return NextResponse.json([]);
 
@@ -52,7 +52,7 @@ export async function GET(req: Request) {
   const results = await prisma.word.findMany({
     where: { isActive: true, word: textFilter },
     select: { word: true },
-    take: 100,
+    take: 1000,
     orderBy: { word: "asc" },
   });
 

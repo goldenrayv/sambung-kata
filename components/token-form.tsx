@@ -33,7 +33,7 @@ export function TokenForm() {
         <Input
           name="username"
           placeholder="Username"
-          className="bg-neutral-800 border-white/10 rounded-lg focus:ring-rose-500 outline-none flex-1 h-10"
+          className="bg-neutral-800 border-white/10 rounded-lg focus:ring-rose-500 outline-none flex-1 h-10 placeholder-white/40"
           required
         />
         <div className="flex-1 flex gap-2">
@@ -42,7 +42,7 @@ export function TokenForm() {
             placeholder="Token Key"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            className="bg-neutral-800 border-white/10 rounded-lg focus:ring-rose-500 outline-none flex-1 h-10"
+            className="bg-neutral-800 border-white/10 rounded-lg focus:ring-rose-500 outline-none flex-1 h-10 placeholder-white/40"
             required
           />
           <Button
@@ -50,7 +50,7 @@ export function TokenForm() {
             variant="secondary"
             size="sm"
             onClick={generateToken}
-            className="h-10 px-3 bg-neutral-800 border border-white/10 text-neutral-400 hover:text-white"
+            className="h-10 px-3 bg-neutral-800 border border-white/10 text-white"
             title="Generate secure token"
           >
             <Sparkles className="w-3.5 h-3.5" />

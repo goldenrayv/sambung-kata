@@ -11,7 +11,7 @@ interface Props {
 
 export default function TopBar({ username, onLogout }: Props) {
   return (
-    <div className="w-full max-w-6xl flex items-center justify-between mb-6 animate-in fade-in duration-500 bg-white/5 backdrop-blur-md border border-white/10 p-2 pl-4 rounded-2xl">
+    <div className="sticky top-0 z-30 w-full max-w-full flex items-center justify-between mb-8 animate-in fade-in duration-500 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 p-4 rounded-none -mx-4 md:-mx-8 px-4 md:px-8">
       <div className="flex items-center gap-3">
         <h1 className="text-xl font-bold font-heading bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text">
           Sambung Kata
@@ -29,14 +29,14 @@ export default function TopBar({ username, onLogout }: Props) {
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center font-bold text-white text-xs shadow-lg">
             {username?.[0]?.toUpperCase()}
           </div>
-          <span className="hidden sm:block text-xs font-medium text-neutral-300">{username}</span>
+          <span className="hidden sm:block text-xs font-medium text-white">{username}</span>
         </div>
 
         <Button
           variant="ghost"
           size="sm"
           onClick={onLogout}
-          className="text-neutral-400 hover:text-white transition-all text-xs h-8 px-2"
+          className="text-white hover:text-rose-400 transition-all text-xs h-8 px-2"
         >
           <LogOut className="w-3.5 h-3.5 mr-1.5" />
           Logout

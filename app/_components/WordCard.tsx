@@ -16,21 +16,23 @@ export default function WordCard({ word, search, searchMode }: Props) {
     searchMode === "prefix" || (searchMode === "contains" && w.startsWith(s))
       ? "Prefix Match"
       : searchMode === "suffix" || (searchMode === "contains" && w.endsWith(s))
-      ? "Suffix Match"
-      : null;
+        ? "Suffix Match"
+        : null;
 
   return (
     <div
-      className={`px-3 py-2.5 rounded-lg border flex items-center justify-between group transition-all duration-200 ${
-        cue
-          ? "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
+      className={`px-3 py-2.5 rounded-lg border flex items-center justify-between group transition-all duration-200 ${cue
+          ? cue === "Prefix Match" 
+            ? "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
+            : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10"
           : "bg-neutral-900/40 border-white/5 hover:border-white/10 hover:bg-neutral-800/40"
-      }`}
+        }`}
     >
       <span
-        className={`text-sm tracking-widest transition-colors uppercase ${
-          cue ? "text-rose-100 font-semibold" : "text-neutral-300 group-hover:text-white"
-        }`}
+        className={`text-sm tracking-widest transition-colors uppercase ${cue 
+          ? cue === "Prefix Match" ? "text-rose-100 font-semibold" : "text-orange-100 font-semibold"
+          : "text-white"
+          }`}
       >
         {word.toUpperCase()}
       </span>

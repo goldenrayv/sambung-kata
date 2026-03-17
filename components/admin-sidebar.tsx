@@ -34,7 +34,7 @@ export function AdminSidebar() {
               // Use startsWith so /admin/tokens is active when on /admin/tokens/...
               pathname.startsWith(item.href)
                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                : "text-neutral-400 hover:text-white hover:bg-white/5"
+                : "text-white hover:bg-white/5"
             )}
           >
             <item.icon className="w-4 h-4" />
@@ -47,7 +47,7 @@ export function AdminSidebar() {
         {/* Back to the user-facing app */}
         <Link
           href="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:bg-white/5 transition-all"
         >
           <Home className="w-4 h-4" />
           Back to App
@@ -57,7 +57,7 @@ export function AdminSidebar() {
         <form action={adminLogout}>
           <button
             type="submit"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-400 hover:text-red-400 hover:bg-red-400/5 transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:text-red-400 hover:bg-red-400/5 transition-all"
           >
             <LogOut className="w-4 h-4" />
             Admin Logout

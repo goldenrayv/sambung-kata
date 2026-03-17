@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Search, BookOpen, SearchX } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, BookOpen, X, Command } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import WordCard from "./WordCard";
 
@@ -12,9 +12,35 @@ interface Props {
 
 export default function WordSearch({ token, wordCount }: Props) {
   const [search, setSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [prefixResults, setPrefixResults] = useState<string[]>([]);
   const [suffixResults, setSuffixResults] = useState<string[]>([]);
+  const [bestRatios, setBestRatios] = useState<{
+    top1: { suffix: string; ratio: number }[];
+    top2: { suffix: string; ratio: number }[];
+    top3: { suffix: string; ratio: number }[];
+  } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Focus shortcut: Tab or Cmd/Ctrl+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Focus on Tab (if not already focused and not typing in another input)
+      // or focus on Cmd/Ctrl + K
+      const isSearchFocused = document.activeElement === searchInputRef.current;
+      
+      if (
+        (e.key === "Tab" && !isSearchFocused) || 
+        ((e.metaKey || e.ctrlKey) && e.key === "k")
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!search.trim()) {
@@ -52,6 +78,24 @@ export default function WordSearch({ token, wordCount }: Props) {
     return () => clearTimeout(timer);
   }, [search, token]);
 
+  // Fetch Best Ratios on mount
+  useEffect(() => {
+    const fetchRatios = async () => {
+      try {
+        const res = await fetch("/api/analytics/ratios", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setBestRatios(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch ratios:", error);
+      }
+    };
+    fetchRatios();
+  }, [token]);
+
   // Group results by first letter (for Suffix side)
   const groupedSuffix = suffixResults.reduce(
     (acc, word) => {
@@ -64,39 +108,133 @@ export default function WordSearch({ token, wordCount }: Props) {
   );
 
   const sortedSuffixLetters = Object.keys(groupedSuffix).sort();
+  
+  const scrollToLetter = (letter: string) => {
+    const element = document.getElementById(`letter-${letter}`);
+    if (element) {
+      const offset = 220; // Account for sticky headers
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+  };
 
   return (
     <div className="w-full relative z-10 space-y-8 pb-20">
       {/* Search Bar - Fixed at top with blur */}
       <div className="sticky top-20 z-20 pb-4 -mx-4 px-4 bg-neutral-950/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto w-full relative group">
-          <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 to-orange-500/10 rounded-xl blur-lg transition-all duration-500 opacity-0 group-focus-within:opacity-100" />
-          <div className="relative bg-neutral-900/60 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden transition-all duration-300 ring-1 ring-transparent focus-within:ring-rose-500/30">
-            <div className="flex items-center px-4 py-4">
+          {/* Refined Backdrop Glow */}
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
+          
+          <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50 animate-border-glow">
+            <div className="flex items-center px-4 py-3.5 gap-3">
               <Search
-                className={`w-6 h-6 mr-4 transition-colors ${isSearching ? "text-rose-400 animate-pulse" : "text-white"}`}
+                className={`w-5 h-5 shrink-0 transition-colors ${
+                  isSearching ? "text-rose-500 animate-spin-slow" : "text-white/40 group-focus-within:text-rose-500"
+                }`}
               />
-              <Input
+              
+              <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Search words..."
-                className="w-full bg-transparent text-2xl font-light text-white placeholder-white/40 border-none focus-visible:ring-0 shadow-none p-0 h-auto"
+                placeholder="Search across repository..."
+                className="flex-1 bg-transparent text-xl font-medium text-white placeholder-white/20 border-none outline-none ring-0 shadow-none p-0 h-auto"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
               />
+
+              {/* Functional Controls: Clear & Shortcut Hint */}
+              <div className="flex items-center gap-3">
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+                <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/10 bg-white/5 text-[10px] font-medium text-white/20 select-none">
+                  <Command className="w-2.5 h-2.5" />
+                  <span>K</span>
+                </div>
+              </div>
             </div>
+
+            {/* Sub-bar: Result Feedback */}
+            {search && !isSearching && (
+              <div className="px-4 py-1.5 border-t border-white/5 bg-white/[0.02] flex items-center justify-between">
+                <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
+                  <span className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
+                  {(prefixResults.length + suffixResults.length).toLocaleString()} matches found
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* Strategic Insights: Best Ratio Badges (Categorized) - Now below search bar */}
+      {bestRatios && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-1000">
+           {/* Section Header */}
+           <div className="flex items-center gap-2 px-1">
+             <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+             <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] font-heading">
+                Magic Suffixes (Survival Analytics)
+             </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { label: "1 Letter", data: bestRatios.top1 },
+              { label: "2 Letters", data: bestRatios.top2 },
+              { label: "3 Letters", data: bestRatios.top3 }
+            ].map((section) => (
+              <div key={section.label} className="space-y-3">
+                <div className="flex items-center gap-2 border-b border-white/10 pb-1.5">
+                  <span className="text-[10px] font-bold text-white uppercase tracking-widest">{section.label}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {section.data.map((r) => (
+                    <button
+                      key={r.suffix}
+                      onClick={() => setSearch(r.suffix)}
+                      className="group relative flex items-center gap-2 px-3 py-1 bg-neutral-900 border border-white/10 rounded-full hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300 active:scale-95 overflow-hidden"
+                    >
+                      <span className="text-[11px] font-black text-orange-400 font-mono tracking-tighter">-{r.suffix.toUpperCase()}</span>
+                      <div className="w-[1px] h-2.5 bg-white/10" />
+                      <span className="text-[9px] font-bold text-white group-hover:text-orange-400 transition-colors">
+                        {r.ratio}%
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main Grid: Prefix (Left) | Suffix (Right) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 min-h-[60vh]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[60vh] border-t border-white/5 pt-8">
         {/* Left Column: Prefix Grid (P) */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <h2 className="text-4xl font-black text-rose-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.2)]">PREFIX</h2>
-            <div className="text-[10px] font-bold text-white tracking-widest uppercase">
-              Starts with &quot;{search}&quot;
+        <div className="space-y-6 p-6 rounded-2xl bg-rose-500/[0.02] border border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.05)]">
+          <div className="flex flex-col border-b border-rose-500/10 pb-4 gap-4 min-h-[140px] justify-end">
+            <div className="flex items-center gap-6 w-full flex-wrap">
+              <h2 className="text-4xl font-black text-rose-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.2)]">PREFIX</h2>
+            </div>
+            
+            <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              <span className="opacity-40 whitespace-nowrap">Starts with</span>
+              <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">&quot;{search}&quot;</span>
             </div>
           </div>
 
@@ -106,28 +244,57 @@ export default function WordSearch({ token, wordCount }: Props) {
                 <WordCard key={word} word={word} search={search} searchMode="prefix" />
               ))
             ) : search && !isSearching ? (
-              <div className="py-20 text-center text-white">No prefix results</div>
+              <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
+                <div className="inline-flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                    <X className="w-6 h-6 text-rose-500 opacity-50" />
+                  </div>
+                  <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No prefix results</p>
+                  <p className="text-[10px] text-white/20 mt-1">Try a different letter combination</p>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>
 
-        {/* Right Column: Suffix Grouped (S) */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-white/5 pb-2">
-            <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
-            <div className="text-[10px] font-bold text-white tracking-widest uppercase">
-              Ends with &quot;{search}&quot;
+        {/* Right Column: Suffix Grid (S) */}
+        <div className="space-y-6 p-6 rounded-2xl bg-orange-500/[0.02] border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)]">
+          <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
+            <div className="flex items-center gap-6 w-full flex-wrap">
+              <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
+              
+              {/* Alphabet Quick-Index aligned horizontally */}
+              {sortedSuffixLetters.length > 0 && (
+                <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
+                  {sortedSuffixLetters.map((letter) => (
+                    <button
+                      key={letter}
+                      onClick={() => {
+                          const el = document.getElementById(`letter-${letter}`);
+                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      className="flex items-center justify-center w-6 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer"
+                    >
+                      {letter}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
+              <span className="opacity-40 whitespace-nowrap">Ends with</span>
+              <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">&quot;{search}&quot;</span>
             </div>
           </div>
 
           <div className="space-y-10">
             {sortedSuffixLetters.length > 0 ? (
               sortedSuffixLetters.map((letter) => (
-                <div key={letter} className="relative">
-                  <div className="sticky top-44 z-10 -ml-4 pl-4 py-2 bg-neutral-950/90 backdrop-blur-sm mb-4">
-                    <span className="text-3xl font-black text-orange-400 border-b-2 border-orange-500 pr-4">
-                      {letter}
-                    </span>
+                <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
+                    <div className="h-[1px] flex-1 bg-orange-500/10" />
                   </div>
                   <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                     {groupedSuffix[letter].map((word) => (
@@ -137,7 +304,15 @@ export default function WordSearch({ token, wordCount }: Props) {
                 </div>
               ))
             ) : search && !isSearching ? (
-              <div className="py-20 text-center text-white">No suffix results</div>
+              <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
+                <div className="inline-flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                    <X className="w-6 h-6 text-orange-500 opacity-50" />
+                  </div>
+                  <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
+                  <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes below</p>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>

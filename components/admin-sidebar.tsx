@@ -8,7 +8,7 @@ import { adminLogout } from "@/app/actions";
 import { LogOut, Home } from "lucide-react";
 
 const menuItems = [
-  { name: "Dashboard", href: "/admin/tokens", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Access Tokens", href: "/admin/tokens", icon: Key },
   { name: "Word Repository", href: "/admin/words", icon: Book },
 ];
@@ -29,13 +29,13 @@ export function AdminSidebar() {
           <Link
             key={item.name}
             href={item.href}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-              // Use startsWith so /admin/tokens is active when on /admin/tokens/...
-              pathname.startsWith(item.href)
-                ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                : "text-white hover:bg-white/5"
-            )}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                // Exact match for dashboard, startswith for others
+                (item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href))
+                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                  : "text-white hover:bg-white/5"
+              )}
           >
             <item.icon className="w-4 h-4" />
             {item.name}

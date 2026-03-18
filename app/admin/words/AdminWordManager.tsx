@@ -84,19 +84,24 @@ export default function AdminWordManager() {
 
     setIsInserting(true);
     try {
-      await insertBulkWords(validationResult.newWords);
-      toast.success(`Successfully added ${validationResult.newWords.length} words!`);
-      setDialogOpen(false);
-      setBulkInput("");
+      const result = await insertBulkWords(validationResult.newWords);
       
-      // Clear URL search if we just added words so they show up at the top
-      if (search) {
-        setSearch("");
+      if (result.success) {
+        toast.success(`Successfully added ${validationResult.newWords.length} words!`);
+        setDialogOpen(false);
+        setBulkInput("");
+        
+        // Clear URL search if we just added words so they show up at the top
+        if (search) {
+          setSearch("");
+        }
+        router.refresh(); // Refresh current page data
+      } else {
+        toast.error(result.error || "Failed to insert words.");
       }
-      router.refresh(); // Refresh current page data
     } catch (error: any) {
       console.error(error);
-      toast.error("Failed to insert words.");
+      toast.error("An unexpected error occurred.");
     } finally {
       setIsInserting(false);
     }

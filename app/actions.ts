@@ -82,13 +82,29 @@ export async function checkNewWords(words: string[]) {
 export async function insertBulkWords(words: string[]) {
   if (words.length === 0) return { success: true };
   
-  await prisma.word.createMany({
-    data: words.map(word => ({ word: word.toUpperCase() })),
-    skipDuplicates: true,
-  });
-  
-  revalidatePath("/admin/words");
-  return { success: true };
+  try {
+    const uppercaseWords = Array.from(new Set(words.map(word => word.toUpperCase().trim()).filter(Boolean)));
+    
+    // Batch processing to avoid payload limits/timeouts in production
+    const BATCH_SIZE = 1000;
+    for (let i = 0; i < uppercaseWords.length; i += BATCH_SIZE) {
+      const batch = uppercaseWords.slice(i, i + BATCH_SIZE);
+      await prisma.word.createMany({
+        data: batch.map(word => ({ word })),
+        skipDuplicates: true,
+      });
+      console.log(`Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(uppercaseWords.length / BATCH_SIZE)}`);
+    }
+    
+    revalidatePath("/admin/words");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Bulk insert failed:", error);
+    return { 
+      success: false, 
+      error: error.message || "Failed to insert words. Please check logs." 
+    };
+  }
 }
 
 export async function toggleWordStatus(id: string, currentlyActive: boolean) {

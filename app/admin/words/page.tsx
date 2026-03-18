@@ -1,11 +1,11 @@
-import { getAllWordsAdmin, getAllWordCount, addWord, toggleWordStatus } from "@/app/actions";
+import { getAllWordsAdmin, getAllWordCountAdmin, toggleWordStatus } from "@/app/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CheckCircle, XCircle, Plus, Book, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Book, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import AdminWordManager from "./AdminWordManager";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +14,9 @@ const PAGE_SIZE = 50;
 export default async function AdminWordsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
-  const { page: pageParam } = await searchParams;
+  const { page: pageParam, q: search } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
 
   let words: any[] = [];
@@ -25,8 +25,8 @@ export default async function AdminWordsPage({
 
   try {
     const [fetchedWords, count] = await Promise.all([
-      getAllWordsAdmin(page, PAGE_SIZE),
-      getAllWordCount(),
+      getAllWordsAdmin(page, PAGE_SIZE, search),
+      getAllWordCountAdmin(search),
     ]);
     words = fetchedWords;
     totalCount = count;
@@ -44,7 +44,7 @@ export default async function AdminWordsPage({
           Word Repository
         </h1>
         <p className="text-white mt-2 text-sm">
-          {totalCount.toLocaleString()} total words &mdash; page {page} of {totalPages}
+          {totalCount.toLocaleString()} {search ? `matches for "${search}"` : "total words"} &mdash; page {page} of {totalPages}
         </p>
       </header>
 
@@ -64,21 +64,7 @@ export default async function AdminWordsPage({
 
         <Card className="bg-neutral-900 border-white/10 rounded-2xl overflow-hidden shadow-xl">
           <CardHeader className="p-0">
-            <form
-              action={addWord}
-              className="p-6 bg-white/5 border-b border-white/10 flex gap-4"
-            >
-              <Input
-                name="word"
-                placeholder="New Indonesian Word"
-                className="bg-neutral-800 border-white/10 rounded-lg focus:ring-orange-500 outline-none flex-1 placeholder-white/40"
-                required
-              />
-              <Button className="bg-orange-600 hover:bg-orange-500 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center gap-2 h-10">
-                <Plus className="w-4 h-4" />
-                Add
-              </Button>
-            </form>
+            <AdminWordManager />
           </CardHeader>
 
           <CardContent className="p-0">
@@ -91,64 +77,72 @@ export default async function AdminWordsPage({
                 </TableRow>
               </TableHeader>
               <TableBody className="divide-y divide-white/5">
-                {words.map((word) => {
-                  const toggleAction = toggleWordStatus.bind(null, word.id, word.isActive);
-                  return (
-                    <TableRow
-                      key={word.id}
-                      className="hover:bg-white/5 transition-colors border-white/5"
-                    >
-                      <TableCell className="px-6 py-4 font-medium tracking-widest text-white uppercase">
-                        {word.word.toUpperCase()}
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        {word.isActive ? (
-                          <Badge
-                            variant="outline"
-                            className="flex items-center gap-1.5 text-green-400 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-400/10 border-green-400/20"
-                          >
-                            <CheckCircle className="w-3 h-3" />
-                            Active
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="flex items-center gap-1.5 text-white text-xs font-semibold px-2 py-0.5 rounded-full bg-white/5 border-white/10"
-                          >
-                            <XCircle className="w-3 h-3" />
-                            Hidden
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="px-6 py-4">
-                        <form action={toggleAction}>
-                          <Button
-                            type="submit"
-                            variant="ghost"
-                            size="sm"
-                            className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all h-auto ${word.isActive
+                {words.length > 0 ? (
+                  words.map((word) => {
+                    const toggleAction = toggleWordStatus.bind(null, word.id, word.isActive);
+                    return (
+                      <TableRow
+                        key={word.id}
+                        className="hover:bg-white/5 transition-colors border-white/5"
+                      >
+                        <TableCell className="px-6 py-4 font-medium tracking-widest text-white uppercase">
+                          {word.word.toUpperCase()}
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          {word.isActive ? (
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1.5 text-green-400 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-400/10 border-green-400/20"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="flex items-center gap-1.5 text-white text-xs font-semibold px-2 py-0.5 rounded-full bg-white/5 border-white/10"
+                            >
+                              <XCircle className="w-3 h-3" />
+                              Hidden
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-6 py-4">
+                          <form action={toggleAction}>
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              size="sm"
+                              className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all h-auto ${word.isActive
                                 ? "text-red-400 hover:bg-red-400/10"
                                 : "text-green-400 hover:bg-green-400/10"
-                              }`}
-                          >
-                            {word.isActive ? "Deactivate" : "Activate"}
-                          </Button>
-                        </form>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                                }`}
+                            >
+                              {word.isActive ? "Deactivate" : "Activate"}
+                            </Button>
+                          </form>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="px-6 py-20 text-center text-white/40">
+                      No words found matching your criteria.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
 
             <div className="flex items-center justify-between p-4 bg-white/5 border-t border-white/10">
               <span className="text-xs text-white">
-                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of{" "}
+                Showing {totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} of{" "}
                 {totalCount.toLocaleString()}
               </span>
               <div className="flex gap-2">
                 {page > 1 ? (
-                  <Link href={`/admin/words?page=${page - 1}`}>
+                  <Link href={`/admin/words?page=${page - 1}${search ? `&q=${search}` : ""}`}>
                     <Button variant="ghost" size="sm" className="h-8 text-white">
                       <ChevronLeft className="w-4 h-4 mr-1" />
                       Prev
@@ -161,7 +155,7 @@ export default async function AdminWordsPage({
                   </Button>
                 )}
                 {page < totalPages ? (
-                  <Link href={`/admin/words?page=${page + 1}`}>
+                  <Link href={`/admin/words?page=${page + 1}${search ? `&q=${search}` : ""}`}>
                     <Button variant="ghost" size="sm" className="h-8 text-white">
                       Next
                       <ChevronRight className="w-4 h-4 ml-1" />

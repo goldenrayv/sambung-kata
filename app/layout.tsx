@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Advanced Indonesian word cheat sheet for Sambung Kata games.",
 };
 
+import { Toaster } from "@/components/ui/sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +30,7 @@ export default function RootLayout({
         className="font-sans antialiased"
       >
         {children}
+        <Toaster />
       </body>
     </html>
   );

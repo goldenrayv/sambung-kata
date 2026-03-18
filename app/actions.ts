@@ -38,16 +38,57 @@ export async function addWord(formData: FormData): Promise<void> {
   }
 }
 
-export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50) {
+export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, search?: string) {
   return prisma.word.findMany({
+    where: search ? {
+      word: {
+        contains: search,
+        mode: 'insensitive'
+      }
+    } : {},
     orderBy: { word: "asc" },
     skip: (page - 1) * pageSize,
     take: pageSize,
   });
 }
 
-export async function getAllWordCount(): Promise<number> {
-  return prisma.word.count();
+export async function getAllWordCountAdmin(search?: string): Promise<number> {
+  return prisma.word.count({
+    where: search ? {
+      word: {
+        contains: search,
+        mode: 'insensitive'
+      }
+    } : {}
+  });
+}
+
+export async function checkNewWords(words: string[]) {
+  const uniqueWords = Array.from(new Set(words.map(w => w.toUpperCase().trim()).filter(Boolean)));
+  
+  const existing = await prisma.word.findMany({
+    where: { word: { in: uniqueWords } },
+    select: { word: true }
+  });
+  
+  const existingSet = new Set(existing.map(e => e.word.toUpperCase()));
+  
+  const newWords = uniqueWords.filter(w => !existingSet.has(w));
+  const existingWords = uniqueWords.filter(w => existingSet.has(w));
+  
+  return { newWords, existingWords };
+}
+
+export async function insertBulkWords(words: string[]) {
+  if (words.length === 0) return { success: true };
+  
+  await prisma.word.createMany({
+    data: words.map(word => ({ word: word.toUpperCase() })),
+    skipDuplicates: true,
+  });
+  
+  revalidatePath("/admin/words");
+  return { success: true };
 }
 
 export async function toggleWordStatus(id: string, currentlyActive: boolean) {

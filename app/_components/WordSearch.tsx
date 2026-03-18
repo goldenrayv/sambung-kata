@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, BookOpen, X, Command } from "lucide-react";
+import { Search, BookOpen, X, Command, Layout, Columns } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 
 interface Props {
@@ -15,12 +16,8 @@ export default function WordSearch({ token, wordCount }: Props) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [prefixResults, setPrefixResults] = useState<string[]>([]);
   const [suffixResults, setSuffixResults] = useState<string[]>([]);
-  const [bestRatios, setBestRatios] = useState<{
-    top1: { suffix: string; ratio: number }[];
-    top2: { suffix: string; ratio: number }[];
-    top3: { suffix: string; ratio: number }[];
-  } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [showSuffix, setShowSuffix] = useState(true);
 
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
@@ -76,101 +73,46 @@ export default function WordSearch({ token, wordCount }: Props) {
     return () => clearTimeout(timer);
   }, [search, token]);
 
-  // Fetch Best Ratios on mount
-  useEffect(() => {
-    const fetchRatios = async () => {
-      try {
-        const res = await fetch("/api/analytics/ratios", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setBestRatios(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch ratios:", error);
-      }
-    };
-    fetchRatios();
-  }, [token]);
-
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
   const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
   const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
   const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
 
-
-  // Helper to get win rate for a word's ending
-  const getStrategicScore = (word: string) => {
-    if (!bestRatios) return 0;
-    const w = word.toUpperCase();
-    
-    // Check 3rd letter suffix
-    const s3 = w.slice(-3);
-    const r3 = bestRatios.top3.find(r => r.suffix.toUpperCase() === s3);
-    if (r3) return r3.ratio;
-
-    // Check 2nd letter suffix
-    const s2 = w.slice(-2);
-    const r2 = bestRatios.top2.find(r => r.suffix.toUpperCase() === s2);
-    if (r2) return r2.ratio;
-
-    // Check 1st letter suffix
-    const s1 = w.slice(-1);
-    const r1 = bestRatios.top1.find(r => r.suffix.toUpperCase() === s1);
-    if (r1) return r1.ratio;
-
-    return 0;
-  };
-
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
   const groupedPrefix = prefixResults.reduce((acc, word) => {
     const w = word.toUpperCase();
-    const matchedSuffixes: { suffix: string; score: number; tier: number }[] = [];
+    const matchedSuffixes: { suffix: string; tier: number }[] = [];
 
     // TIER 1: HARDCODED Suffixes
     for (const h of HARDCODED) {
-      if (w.endsWith(h)) {
-        let score = 0;
-        if (h.length === 3) score = bestRatios?.top3.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
-        else if (h.length === 2) score = bestRatios?.top2.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
-        else if (h.length === 1) score = bestRatios?.top1.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
-        
-        matchedSuffixes.push({ suffix: `-${h}`, score, tier: 1 });
-      }
+      if (w.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
     }
 
     // TIER 1: MAGIC Strategic Suffixes
     const s3 = w.slice(-3);
-    const r3 = bestRatios?.top3.find(r => r.suffix.toUpperCase() === s3 && MAGIC_3.includes(s3));
-    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio, tier: 1 });
+    if (MAGIC_3.includes(s3)) matchedSuffixes.push({ suffix: `-${s3}`, tier: 1 });
 
     const s2 = w.slice(-2);
-    const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
-    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio, tier: 1 });
+    if (MAGIC_2.includes(s2)) matchedSuffixes.push({ suffix: `-${s2}`, tier: 1 });
 
     const s1 = w.slice(-1);
-    const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
-    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio, tier: 1 });
+    if (MAGIC_1.includes(s1)) matchedSuffixes.push({ suffix: `-${s1}`, tier: 1 });
 
     if (matchedSuffixes.length > 0) {
-      // Prioritize by highest score within Tier 1
-      matchedSuffixes.sort((a, b) => b.score - a.score);
-      
       const bestMatch = matchedSuffixes[0];
-      if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], score: bestMatch.score, tier: bestMatch.tier };
+      if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], tier: bestMatch.tier };
       acc[bestMatch.suffix].words.push(word);
     } else {
       // TIER 2: Everything Else
-      if (!acc["Other"]) acc["Other"] = { words: [], score: 0, tier: 2 };
+      if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
       acc["Other"].words.push(word);
     }
 
     return acc;
-  }, {} as Record<string, { words: string[], score: number, tier: number }>);
+  }, {} as Record<string, { words: string[], tier: number }>);
 
-  // Sort prefix groups by tier first, then by score (descending)
+  // Sort prefix groups by tier first, then alphabetically
   const sortedPrefixSuffixes = Object.keys(groupedPrefix).sort((a, b) => {
     if (a === "Other") return 1;
     if (b === "Other") return -1;
@@ -179,7 +121,7 @@ export default function WordSearch({ token, wordCount }: Props) {
     const groupB = groupedPrefix[b];
     
     if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
-    return groupB.score - groupA.score;
+    return a.localeCompare(b);
   });
 
   // Group results by first letter (for Suffix side)
@@ -204,11 +146,17 @@ export default function WordSearch({ token, wordCount }: Props) {
           
           <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50 animate-border-glow">
             <div className="flex items-center px-4 py-3.5 gap-3">
-              <Search
-                className={`w-5 h-5 shrink-0 transition-colors ${
-                  isSearching ? "text-rose-500 animate-spin-slow" : "text-white/40 group-focus-within:text-rose-500"
+              <button
+                onClick={() => setShowSuffix(!showSuffix)}
+                title={showSuffix ? "Hide Suffix Results" : "Show Suffix Results"}
+                className={`p-1.5 rounded-md transition-all duration-300 ${
+                  showSuffix 
+                    ? "bg-white/5 border border-white/10 text-white/40 hover:text-white" 
+                    : "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
                 }`}
-              />
+              >
+                {showSuffix ? <Columns className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
+              </button>
               
               <input
                 ref={searchInputRef}
@@ -276,12 +224,17 @@ export default function WordSearch({ token, wordCount }: Props) {
 
 
       {/* Main Grid: Prefix (Left) | Suffix (Right) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[60vh] border-t border-white/5 pt-8">
+      <div className={`grid grid-cols-1 ${showSuffix ? "md:grid-cols-2" : "md:grid-cols-1"} gap-6 min-h-[60vh] border-t border-white/5 pt-8`}>
         {/* Left Column: Prefix Grid (P) */}
-        <div className="space-y-6 p-6 rounded-2xl bg-rose-500/[0.02] border border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.05)]">
+        <div className={`space-y-6 p-6 rounded-2xl bg-rose-500/[0.02] border border-rose-500/20 shadow-[0_0_30px_rgba(244,63,94,0.05)] transition-all duration-500 ${!showSuffix ? "col-span-full" : ""}`}>
           <div className="flex flex-col border-b border-rose-500/10 pb-4 gap-4 min-h-[140px] justify-end">
             <div className="flex items-center gap-6 w-full flex-wrap">
-              <h2 className="text-4xl font-black text-rose-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.2)]">PREFIX</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-4xl font-black text-rose-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(244,63,94,0.2)]">PREFIX</h2>
+                {!showSuffix && (
+                  <Badge variant="outline" className="bg-rose-500/10 text-rose-400 border-rose-500/20 text-[10px] font-black tracking-widest uppercase">Full Width</Badge>
+                )}
+              </div>
               
               {/* Tactical Quick-Index aligned horizontally */}
               {sortedPrefixSuffixes.length > 0 && (
@@ -329,13 +282,8 @@ export default function WordSearch({ token, wordCount }: Props) {
                       <span className="text-xl font-black text-rose-400 drop-shadow-[0_0_10px_rgba(244,63,94,0.15)]">{suffix.toUpperCase()}</span>
                       <div className="h-[1px] w-12 bg-rose-500/10" />
                     </div>
-                    {groupedPrefix[suffix].score > 0 && (
-                      <div className="px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[9px] font-black text-rose-400 animate-pulse">
-                        {groupedPrefix[suffix].score}% WINRATE
-                      </div>
-                    )}
                   </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 content-start">
+                  <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2 content-start`}>
                     {groupedPrefix[suffix].words.map((word) => (
                       <WordCard key={word} word={word} search={search} searchMode="prefix" />
                     ))}
@@ -357,64 +305,66 @@ export default function WordSearch({ token, wordCount }: Props) {
         </div>
 
         {/* Right Column: Suffix Grid (S) */}
-        <div className="space-y-6 p-6 rounded-2xl bg-orange-500/[0.02] border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)]">
-          <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
-            <div className="flex items-center gap-6 w-full flex-wrap">
-              <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
-              
-              {/* Alphabet Quick-Index aligned horizontally */}
-              {sortedSuffixLetters.length > 0 && (
-                <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
-                  {sortedSuffixLetters.map((letter) => (
-                    <button
-                      key={letter}
-                      onClick={() => {
-                          const el = document.getElementById(`letter-${letter}`);
-                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }}
-                      className="flex items-center justify-center w-6 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer"
-                    >
-                      {letter}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              <span className="opacity-40 whitespace-nowrap">Ends with</span>
-              <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">&quot;{search}&quot;</span>
-            </div>
-          </div>
-
-          <div className="space-y-10">
-            {sortedSuffixLetters.length > 0 ? (
-              sortedSuffixLetters.map((letter) => (
-                <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
-                    <div className="h-[1px] flex-1 bg-orange-500/10" />
-                  </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    {groupedSuffix[letter].map((word) => (
-                      <WordCard key={word} word={word} search={search} searchMode="suffix" />
+        {showSuffix && (
+          <div className="space-y-6 p-6 rounded-2xl bg-orange-500/[0.02] border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
+              <div className="flex items-center gap-6 w-full flex-wrap">
+                <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
+                
+                {/* Alphabet Quick-Index aligned horizontally */}
+                {sortedSuffixLetters.length > 0 && (
+                  <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
+                    {sortedSuffixLetters.map((letter) => (
+                      <button
+                        key={letter}
+                        onClick={() => {
+                            const el = document.getElementById(`letter-${letter}`);
+                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className="flex items-center justify-center w-6 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer"
+                      >
+                        {letter}
+                      </button>
                     ))}
                   </div>
-                </div>
-              ))
-            ) : search && !isSearching ? (
-              <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
-                <div className="inline-flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                    <X className="w-6 h-6 text-orange-500 opacity-50" />
-                  </div>
-                  <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
-                  <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
-                </div>
+                )}
               </div>
-            ) : null}
+
+              <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
+                <span className="opacity-40 whitespace-nowrap">Ends with</span>
+                <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">&quot;{search}&quot;</span>
+              </div>
+            </div>
+
+            <div className="space-y-10">
+              {sortedSuffixLetters.length > 0 ? (
+                sortedSuffixLetters.map((letter) => (
+                  <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
+                      <div className="h-[1px] flex-1 bg-orange-500/10" />
+                    </div>
+                    <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2`}>
+                      {groupedSuffix[letter].map((word) => (
+                        <WordCard key={word} word={word} search={search} searchMode="suffix" />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : search && !isSearching ? (
+                <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
+                  <div className="inline-flex flex-col items-center">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                      <X className="w-6 h-6 text-orange-500 opacity-50" />
+                    </div>
+                    <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
+                    <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {!search && (

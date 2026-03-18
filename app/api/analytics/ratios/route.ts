@@ -46,11 +46,22 @@ export async function GET(req: Request) {
         }
     });
 
+    // Hardcoded Tactical Suffixes (Target list)
+    const TACTICAL_LIST = [
+        "Q", "X", "Y", "Z", "V",
+        "AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "CY", "OH", "OO",
+        "ILO", "NDO", "NDA", "TIF"
+    ];
+
     const calculateTop = (length: number) => {
         return Object.entries(suffixCounts)
             .filter(([suffix, count]) => {
                 if (suffix.length !== length) return false;
-                // Thresholds based on length
+                
+                const isTactical = TACTICAL_LIST.includes(suffix.toUpperCase());
+                if (isTactical) return true; // Tactical ones always pass threshold if they exist
+
+                // General thresholds
                 if (length === 1) return count >= 20;
                 if (length === 2) return count >= 10;
                 return count >= 5;
@@ -65,9 +76,17 @@ export async function GET(req: Request) {
                     ratio: Math.round(ratio * 10) / 10,
                 };
             })
-            .filter(r => r.ratio > 0)
-            .sort((a, b) => b.ratio - a.ratio || b.suffixCount - a.suffixCount)
-            .slice(0, 10);
+            .filter(r => r.ratio > 0 || TACTICAL_LIST.includes(r.suffix.toUpperCase()))
+            .sort((a, b) => {
+                const aTactical = TACTICAL_LIST.includes(a.suffix.toUpperCase());
+                const bTactical = TACTICAL_LIST.includes(b.suffix.toUpperCase());
+                
+                if (aTactical && !bTactical) return -1;
+                if (!aTactical && bTactical) return 1;
+                
+                return b.ratio - a.ratio || b.suffixCount - a.suffixCount;
+            });
+            // Removed slice(0, 10) to let frontend decide what to show
     };
 
     return NextResponse.json({

@@ -96,7 +96,7 @@ export default function WordSearch({ token, wordCount }: Props) {
 
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
-  const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "CY", "OH", "OO", "EA", "OA"];
+  const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
   const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
   const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
 

@@ -90,7 +90,10 @@ export async function insertBulkWords(words: string[]) {
     for (let i = 0; i < uppercaseWords.length; i += BATCH_SIZE) {
       const batch = uppercaseWords.slice(i, i + BATCH_SIZE);
       await prisma.word.createMany({
-        data: batch.map(word => ({ word })),
+        data: batch.map(word => ({ 
+          word,
+          updatedAt: new Date()
+        })),
         skipDuplicates: true,
       });
       console.log(`Inserted batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(uppercaseWords.length / BATCH_SIZE)}`);

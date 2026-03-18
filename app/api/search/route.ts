@@ -30,29 +30,63 @@ export async function GET(req: Request) {
 
   if (!q) return NextResponse.json([]);
 
-  // Build the Prisma where clause.
-  // Use Prisma's `mode: "insensitive"` for case-insensitive search.
-  const textFilter: {
-    startsWith?: string;
-    endsWith?: string;
-    contains?: string;
-    mode?: "insensitive";
-  } = {};
+  const LIMIT = 1000;
 
-  // Handle search query with uppercase normalization
   if (mode === "prefix") {
-    textFilter.startsWith = q;
-  } else if (mode === "suffix") {
-    textFilter.endsWith = q;
-  } else {
-    textFilter.contains = q;
-  }
-  textFilter.mode = "insensitive"; // Apply case-insensitive mode
+    // Strategic Suffixes
+    const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
+    const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
+    const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
+    const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
+    const ALL_MAGIC = [...MAGIC_1, ...MAGIC_2, ...MAGIC_3, ...HARDCODED];
 
+    // 1. Fetch Strategic Words (Ending in Magic/Hardcoded suffixes)
+    const strategicResults = await prisma.word.findMany({
+      where: {
+        isActive: true,
+        word: { startsWith: q, mode: "insensitive" },
+        OR: ALL_MAGIC.map(s => ({
+          word: { endsWith: s, mode: "insensitive" }
+        }))
+      },
+      select: { word: true },
+      take: LIMIT,
+      orderBy: { word: "asc" },
+    });
+
+    let results = strategicResults.map(r => r.word);
+
+    // 2. If we have space, fill with Other words
+    if (results.length < LIMIT) {
+      const remaining = LIMIT - results.length;
+      const otherResults = await prisma.word.findMany({
+        where: {
+          isActive: true,
+          word: { startsWith: q, mode: "insensitive" },
+          NOT: ALL_MAGIC.map(s => ({
+            word: { endsWith: s, mode: "insensitive" }
+          }))
+        },
+        select: { word: true },
+        take: remaining,
+        orderBy: { word: "asc" },
+      });
+      results = [...results, ...otherResults.map(r => r.word)];
+    }
+
+    return NextResponse.json(results);
+  }
+
+  // Suffix mode (or fallback) remains original — just alphabetical
   const results = await prisma.word.findMany({
-    where: { isActive: true, word: textFilter },
+    where: { 
+      isActive: true, 
+      word: mode === "suffix" 
+        ? { endsWith: q, mode: "insensitive" } 
+        : { contains: q, mode: "insensitive" } 
+    },
     select: { word: true },
-    take: 1000,
+    take: LIMIT,
     orderBy: { word: "asc" },
   });
 

@@ -141,32 +141,29 @@ export default function WordSearch({ token, wordCount }: Props) {
       }
     }
 
-    // TIER 2: MAGIC Strategic Suffixes
+    // TIER 1: MAGIC Strategic Suffixes
     const s3 = w.slice(-3);
     const r3 = bestRatios?.top3.find(r => r.suffix.toUpperCase() === s3 && MAGIC_3.includes(s3));
-    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio, tier: 2 });
+    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio, tier: 1 });
 
     const s2 = w.slice(-2);
     const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
-    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio, tier: 2 });
+    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio, tier: 1 });
 
     const s1 = w.slice(-1);
     const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
-    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio, tier: 2 });
+    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio, tier: 1 });
 
     if (matchedSuffixes.length > 0) {
-      // Prioritize by best tier (1 is best) then by highest score
-      matchedSuffixes.sort((a, b) => {
-        if (a.tier !== b.tier) return a.tier - b.tier;
-        return b.score - a.score;
-      });
+      // Prioritize by highest score within Tier 1
+      matchedSuffixes.sort((a, b) => b.score - a.score);
       
       const bestMatch = matchedSuffixes[0];
       if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], score: bestMatch.score, tier: bestMatch.tier };
       acc[bestMatch.suffix].words.push(word);
     } else {
-      // TIER 3: Everything Else
-      if (!acc["Other"]) acc["Other"] = { words: [], score: 0, tier: 3 };
+      // TIER 2: Everything Else
+      if (!acc["Other"]) acc["Other"] = { words: [], score: 0, tier: 2 };
       acc["Other"].words.push(word);
     }
 

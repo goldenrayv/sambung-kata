@@ -11,7 +11,7 @@ export default function Home() {
   const [tokenInput, setTokenInput] = useState("");
   const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ username: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; expiresAt: Date } | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [token, setToken] = useState("");
 
@@ -34,7 +34,7 @@ export default function Home() {
     if (result.valid) {
       localStorage.setItem("sk_token", rawToken);
       setToken(rawToken);
-      setUser({ username: result.username! });
+      setUser({ username: result.username!, expiresAt: result.expiresAt! });
       setIsAuthenticated(true);
       setWordCount(await getWordCount());
     } else {
@@ -81,7 +81,11 @@ export default function Home() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 rounded-full blur-[120px]" />
       </div>
 
-      <TopBar username={user!.username} onLogout={handleLogout} />
+      <TopBar
+        username={user!.username}
+        expiresAt={user!.expiresAt}
+        onLogout={handleLogout}
+      />
       <WordSearch token={token} wordCount={wordCount} />
     </main>
   );

@@ -3,11 +3,17 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const words = [
-  "LOID", "TIFOID", "IFTIRASY", "INCOMPETENCY", "IAMBUS", "HOPEA", "IAIDO", "AII", "IFFAH", "IATROGENIK"
+  "CYANOPHYTA", "CYANUS", "CYATHEA", "CLAZMOCALYX", "CYATHULA", "CYGAS", "CYCLEA", 
+  "CYCLOPHORUS", "CYLINDRICA", "CYMBOPOGON", "CYMINUM", "CYMNOGRULLUS", "CYNARA", 
+  "CYNOGALE", "CYNOGLOSSIDAE", "CYNOMETRA", "CYNOPTERUS", "CYPAINOIDES", "CYPERACEAE", 
+  "CYPERUS", "CYPHOMANDRA", "CYPNOPERSICUM", "CYPRINIDAE", "CYPRINIDAL", "CYPRINUS", 
+  "CYPRUS", "CYPTOPTERUS", "CYRAS", "CYRTOSTACHYS", "ABSTINENCY", "AFFLUENCY", 
+  "ANTIPIRACY", "ARROGANCY", "CORPULENCY", "DELEGITIMACY", "EXCELLENCY", "INCOMPETENCY", 
+  "NONLEGITIMACY", "NONTRANSPARENCY", "PRODEMOCRACY", "RECALCITRANCY", "RESURGENCY", "VERDANCY"
 ]
 
 async function main() {
-  console.log('Seeding words wave 8...')
+  console.log('Seeding words wave 9...')
   let added = 0
   let skipped = 0
 
@@ -30,7 +36,7 @@ async function main() {
     }
   }
 
-  console.log(`Finished wave 8: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
+  console.log(`Finished wave 9: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
 }
 
 main()
@@ -41,3 +47,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+

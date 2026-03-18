@@ -120,7 +120,7 @@ export async function validateToken(token: string) {
   if (!user) return { valid: false, error: "Invalid Access Token" };
   if (user.expiresAt < new Date()) return { valid: false, error: "Token expired" };
 
-  return { valid: true, username: user.username };
+  return { valid: true, username: user.username, expiresAt: user.expiresAt };
 }
 
 // ---------------------------------------------------------------------------

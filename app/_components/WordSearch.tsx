@@ -98,6 +98,7 @@ export default function WordSearch({ token, wordCount }: Props) {
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
   const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "CY", "OH", "OO", "EA", "OA"];
   const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
+  const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
 
 
   // Helper to get win rate for a word's ending
@@ -227,16 +228,29 @@ export default function WordSearch({ token, wordCount }: Props) {
         </div>
 
         {/* Tactical Quick-Select Badges - Simplified below search bar */}
-        <div className="max-w-3xl mx-auto mt-6 flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-4 duration-1000">
-          {[...MAGIC_1, ...MAGIC_2, ...MAGIC_3].sort().map((s) => (
-            <button
-              key={s}
-              onClick={() => setSearch(s)}
-              className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
-            >
-              -{s}
-            </button>
-          ))}
+        <div className="max-w-3xl mx-auto mt-6 space-y-3 animate-in fade-in slide-in-from-top-4 duration-1000">
+          <div className="flex flex-wrap gap-2">
+            {[...MAGIC_1, ...MAGIC_2, ...MAGIC_3].sort().map((s) => (
+              <button
+                key={s}
+                onClick={() => setSearch(s)}
+                className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
+              >
+                -{s}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+            {HARDCODED.map((s) => (
+              <button
+                key={s}
+                onClick={() => setSearch(s)}
+                className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-[10px] font-black text-rose-400 hover:bg-rose-500 hover:text-white transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
+              >
+                -{s}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

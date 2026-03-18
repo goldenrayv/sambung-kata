@@ -7,11 +7,17 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   username: string;
+  expiresAt: Date;
   onLogout: () => void;
 }
 
-export default function TopBar({ username, onLogout }: Props) {
+export default function TopBar({ username, expiresAt, onLogout }: Props) {
   const [showTips, setShowTips] = useState(false);
+
+  const now = new Date();
+  const diffTime = new Date(expiresAt).getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const isWarning = diffDays > 0 && diffDays <= 3;
 
   return (
     <div className="sticky top-0 z-30 w-full max-w-full flex items-center justify-between mb-8 animate-in fade-in duration-500 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 p-4 rounded-none -mx-4 md:-mx-8 px-4 md:px-8">
@@ -83,6 +89,15 @@ export default function TopBar({ username, onLogout }: Props) {
               Strategic Tips
             </Badge>
           </button>
+          
+          <div className="flex flex-col items-end mr-2">
+            <span className="text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
+              <span className={isWarning ? "text-orange-400 animate-pulse" : "text-white/40"}>
+                {diffDays}d remaining
+              </span>
+            </span>
+          </div>
+
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center font-bold text-white text-xs shadow-lg">
             {username?.[0]?.toUpperCase()}
           </div>

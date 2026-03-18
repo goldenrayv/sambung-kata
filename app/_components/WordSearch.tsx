@@ -127,39 +127,62 @@ export default function WordSearch({ token, wordCount }: Props) {
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
   const groupedPrefix = prefixResults.reduce((acc, word) => {
     const w = word.toUpperCase();
-    const matchedSuffixes: { suffix: string; score: number }[] = [];
+    const matchedSuffixes: { suffix: string; score: number; tier: number }[] = [];
 
-    // Check all matching strategic suffixes (1, 2, and 3 letters)
+    // TIER 1: HARDCODED Suffixes
+    for (const h of HARDCODED) {
+      if (w.endsWith(h)) {
+        let score = 0;
+        if (h.length === 3) score = bestRatios?.top3.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
+        else if (h.length === 2) score = bestRatios?.top2.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
+        else if (h.length === 1) score = bestRatios?.top1.find(r => r.suffix.toUpperCase() === h)?.ratio || 0;
+        
+        matchedSuffixes.push({ suffix: `-${h}`, score, tier: 1 });
+      }
+    }
+
+    // TIER 2: MAGIC Strategic Suffixes
     const s3 = w.slice(-3);
     const r3 = bestRatios?.top3.find(r => r.suffix.toUpperCase() === s3 && MAGIC_3.includes(s3));
-    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio });
+    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio, tier: 2 });
 
     const s2 = w.slice(-2);
     const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
-    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio });
+    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio, tier: 2 });
 
     const s1 = w.slice(-1);
     const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
-    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio });
+    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio, tier: 2 });
 
     if (matchedSuffixes.length > 0) {
-      matchedSuffixes.forEach(({ suffix, score }) => {
-        if (!acc[suffix]) acc[suffix] = { words: [], score };
-        acc[suffix].words.push(word);
+      // Prioritize by best tier (1 is best) then by highest score
+      matchedSuffixes.sort((a, b) => {
+        if (a.tier !== b.tier) return a.tier - b.tier;
+        return b.score - a.score;
       });
+      
+      const bestMatch = matchedSuffixes[0];
+      if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], score: bestMatch.score, tier: bestMatch.tier };
+      acc[bestMatch.suffix].words.push(word);
     } else {
-      if (!acc["Other"]) acc["Other"] = { words: [], score: 0 };
+      // TIER 3: Everything Else
+      if (!acc["Other"]) acc["Other"] = { words: [], score: 0, tier: 3 };
       acc["Other"].words.push(word);
     }
 
     return acc;
-  }, {} as Record<string, { words: string[], score: number }>);
+  }, {} as Record<string, { words: string[], score: number, tier: number }>);
 
-  // Sort prefix groups by their win rate score (descending)
+  // Sort prefix groups by tier first, then by score (descending)
   const sortedPrefixSuffixes = Object.keys(groupedPrefix).sort((a, b) => {
     if (a === "Other") return 1;
     if (b === "Other") return -1;
-    return groupedPrefix[b].score - groupedPrefix[a].score;
+    
+    const groupA = groupedPrefix[a];
+    const groupB = groupedPrefix[b];
+    
+    if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
+    return groupB.score - groupA.score;
   });
 
   // Group results by first letter (for Suffix side)

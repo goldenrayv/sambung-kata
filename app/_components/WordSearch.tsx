@@ -25,8 +25,6 @@ export default function WordSearch({ token, wordCount }: Props) {
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Focus on Tab (if not already focused and not typing in another input)
-      // or focus on Cmd/Ctrl + K
       const isSearchFocused = document.activeElement === searchInputRef.current;
       
       if (
@@ -98,8 +96,8 @@ export default function WordSearch({ token, wordCount }: Props) {
 
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
-  const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "CY", "OH", "OO"];
-  const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF"];
+  const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "CY", "OH", "OO", "EA", "OA"];
+  const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
 
 
   // Helper to get win rate for a word's ending
@@ -131,17 +129,14 @@ export default function WordSearch({ token, wordCount }: Props) {
     const matchedSuffixes: { suffix: string; score: number }[] = [];
 
     // Check all matching strategic suffixes (1, 2, and 3 letters)
-    // 3-letter matches
     const s3 = w.slice(-3);
     const r3 = bestRatios?.top3.find(r => r.suffix.toUpperCase() === s3 && MAGIC_3.includes(s3));
     if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio });
 
-    // 2-letter matches
     const s2 = w.slice(-2);
     const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
     if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio });
 
-    // 1-letter matches
     const s1 = w.slice(-1);
     const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
     if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio });
@@ -152,7 +147,6 @@ export default function WordSearch({ token, wordCount }: Props) {
         acc[suffix].words.push(word);
       });
     } else {
-      // If no tactical match, put in Other
       if (!acc["Other"]) acc["Other"] = { words: [], score: 0 };
       acc["Other"].words.push(word);
     }
@@ -180,28 +174,11 @@ export default function WordSearch({ token, wordCount }: Props) {
 
   const sortedSuffixLetters = Object.keys(groupedSuffix).sort();
   
-  const scrollToLetter = (letter: string) => {
-    const element = document.getElementById(`letter-${letter}`);
-    if (element) {
-      const offset = 220; // Account for sticky headers
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
-    }
-  };
-
   return (
     <div className="w-full relative z-10 space-y-8 pb-20">
       {/* Search Bar - Fixed at top with blur */}
       <div className="sticky top-20 z-20 pb-4 -mx-4 px-4 bg-neutral-950/80 backdrop-blur-md">
         <div className="max-w-3xl mx-auto w-full relative group">
-          {/* Refined Backdrop Glow */}
           <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
           
           <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50 animate-border-glow">
@@ -222,7 +199,6 @@ export default function WordSearch({ token, wordCount }: Props) {
                 autoFocus
               />
 
-              {/* Functional Controls: Clear & Shortcut Hint */}
               <div className="flex items-center gap-3">
                 {search && (
                   <button
@@ -239,7 +215,6 @@ export default function WordSearch({ token, wordCount }: Props) {
               </div>
             </div>
 
-            {/* Sub-bar: Result Feedback */}
             {search && !isSearching && (
               <div className="px-4 py-1.5 border-t border-white/5 bg-white/[0.02] flex items-center justify-between">
                 <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
@@ -249,6 +224,19 @@ export default function WordSearch({ token, wordCount }: Props) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Tactical Quick-Select Badges - Simplified below search bar */}
+        <div className="max-w-3xl mx-auto mt-6 flex flex-wrap gap-2 animate-in fade-in slide-in-from-top-4 duration-1000">
+          {[...MAGIC_1, ...MAGIC_2, ...MAGIC_3].sort().map((s) => (
+            <button
+              key={s}
+              onClick={() => setSearch(s)}
+              className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
+            >
+              -{s}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -387,7 +375,7 @@ export default function WordSearch({ token, wordCount }: Props) {
                     <X className="w-6 h-6 text-orange-500 opacity-50" />
                   </div>
                   <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
-                  <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes below</p>
+                  <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
                 </div>
               </div>
             ) : null}

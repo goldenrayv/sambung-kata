@@ -61,8 +61,32 @@ export async function toggleWordStatus(id: string, currentlyActive: boolean) {
 // ---------------------------------------------------------------------------
 // Users / Tokens — admin
 // ---------------------------------------------------------------------------
-export async function getUsers() {
-  return prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+export async function getUsers(search?: string) {
+  return prisma.user.findMany({
+    where: search ? {
+      username: {
+        contains: search,
+        mode: 'insensitive'
+      }
+    } : {},
+    orderBy: { createdAt: "desc" }
+  });
+}
+
+export async function extendUserToken(id: string, days: number) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) return { success: false, error: "User not found" };
+
+  const newExpiry = new Date(Math.max(user.expiresAt.getTime(), Date.now()));
+  newExpiry.setDate(newExpiry.getDate() + days);
+
+  await prisma.user.update({
+    where: { id },
+    data: { expiresAt: newExpiry }
+  });
+
+  revalidatePath("/admin/tokens");
+  return { success: true };
 }
 
 export async function createToken(username: string, token: string, days: number = 30) {

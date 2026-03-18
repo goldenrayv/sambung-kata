@@ -5,6 +5,13 @@ import { UserPlus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createToken } from "@/app/actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function TokenForm() {
   const [token, setToken] = useState("");
@@ -25,7 +32,8 @@ export function TokenForm() {
       action={async (formData) => {
         const username = formData.get("username") as string;
         const finalToken = formData.get("token") as string;
-        await createToken(username, finalToken);
+        const days = parseInt(formData.get("days") as string) || 30;
+        await createToken(username, finalToken, days);
       }}
       className="p-6 bg-white/5 border-b border-white/10 flex flex-col gap-4"
     >
@@ -45,19 +53,29 @@ export function TokenForm() {
             className="bg-neutral-800 border-white/10 rounded-lg focus:ring-rose-500 outline-none flex-1 h-10 placeholder-white/40"
             required
           />
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
             onClick={generateToken}
-            className="h-10 px-3 bg-neutral-800 border border-white/10 text-white"
+            className="h-10 px-3 bg-neutral-800 border border-white/10 text-white rounded-lg hover:bg-neutral-700 transition-colors"
             title="Generate secure token"
           >
             <Sparkles className="w-3.5 h-3.5" />
-          </Button>
+          </button>
         </div>
+        <Select name="days" defaultValue="30">
+          <SelectTrigger className="bg-neutral-800 border-white/10 rounded-lg text-white h-10 w-full sm:w-[140px] focus:ring-rose-500 outline-none transition-colors border">
+            <SelectValue placeholder="Expiry" />
+          </SelectTrigger>
+          <SelectContent className="bg-neutral-900 border-white/10 text-white shadow-2xl">
+            <SelectItem value="1">1 Day</SelectItem>
+            <SelectItem value="3">3 Days</SelectItem>
+            <SelectItem value="7">7 Days</SelectItem>
+            <SelectItem value="14">14 Days</SelectItem>
+            <SelectItem value="30">30 Days</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <Button className="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold h-10 rounded-lg transition-all shadow-lg shadow-rose-900/20">
+      <Button className="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold h-10 rounded-lg transition-all shadow-lg shadow-rose-900/20 active:scale-[0.98]">
         <UserPlus className="w-4 h-4 mr-2" />
         Issue New Access Key
       </Button>

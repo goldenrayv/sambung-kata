@@ -3,11 +3,11 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const words = [
-  "ENSI", "SAO", "SAOK", "TIPS", "IAN", "ART", "ARI", "APIN", "KSAD", "KSAL", "SPIN", "LOI", "FEZ", "RAGAZ", "UKUF", "ONDERBOUW", "IFUMI", "FUSUK", "ALF", "KHAUF", "MIAK", "NGOH", "TIFOSI", "TIFLOFILI", "TIFLOFILIA", "IFTAR", "AFYAUF", "UFO", "UFOLOGI", "TEAN", "OALAH", "AMENOREA", "KOHLEA", "YOKE", "ANOI", "GOI", "NEA", "XANTIN", "XANTINA", "LOIR", "IFA", "TAZOA"
+  "LOID", "TIFOID", "IFTIRASY", "INCOMPETENCY", "IAMBUS", "HOPEA", "IAIDO", "AII", "IFFAH", "IATROGENIK"
 ]
 
 async function main() {
-  console.log('Seeding words wave 7...')
+  console.log('Seeding words wave 8...')
   let added = 0
   let skipped = 0
 
@@ -30,7 +30,7 @@ async function main() {
     }
   }
 
-  console.log(`Finished wave 7: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
+  console.log(`Finished wave 8: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
 }
 
 main()

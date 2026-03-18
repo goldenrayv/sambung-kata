@@ -3,24 +3,17 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const words = [
-  "AKTIF", "ADAPTIF", "ADIKTIF", "ADITIF", "ADMINISTRATIF", "AFEKTIF", "AGRESIF", 
-  "ALTERNATIF", "ARGUMENTATIF", "ASOSIATIF", "ATRAKTIF", "ALIF", "ARIF", "ADJEKTIF", 
-  "ASERTIF", "ASUMTIF", "AKUMULATIF", "ABORTIF", "AFIRMATIF", "AGITATIF", "AKOMODATIF", 
-  "ANTISIPATIF", "APLIKATIF", "AKUSATIF", "AMELIORATIF", "ASIMILATIF", "ATRIBUTIF", 
-  "AUDITIF", "APOSITIF", "AKSELERATIF", "AGLUTINATIF", "ADSORPTIF", "APERITIF", 
-  "ADHESIF", "ABLATIF", "DEDUKTIF", "DEFINITIF", "DEFORMATIF", "DESKRIPTIF", 
-  "DEMONSTRATIF", "DETEKTIF", "DIREKTIF", "DISTRIBUTIF", "DEFENSIF", "DEGRADATIF", 
-  "DEKLARATIF", "DEKORATIF", "DELUSIF", "DENOTATIF", "DEPRESIF", "DERIVATIF", 
-  "DESTRUKTIF", "DETERMINATIF", "DIGESTIF", "DIMINUTIF", "DISJUNGTIF", "DISKURSIF", 
-  "DISOSIATIF", "DEGENERATIF", "DEFEKTIF", "DISKRIMINATIF", "DATIF", "DURATIF", 
-  "EDUKATIF", "EFEKTIF", "EKSPANSIF", "EKSPRESIF", "EKSPLORATIF", "EKSTENSIF", 
-  "EVALUATIF", "EVOKATIF", "EJEKTIF", "EKSKLUSIF", "EKSKURSIF", "EKSEKUTIF", 
-  "EKSPLIKATIF", "EKSPLOSIF", "EKUATIF", "ELUSIF", "EMANSIPATIF", "EMOTIF", 
-  "EVOLUTIF", "EKSPLOITATIF"
+  // Image 1
+  "SEDATIF", "SELEKTIF", "SENSITIF", "SEGREGATIF", "SOLUTIF", "SPEKULATIF", "SPORTIF", 
+  "STATIF", "SUBORDINATIF", "SUBVERSIF", "SUBJEKTIF", "SUBSTANTIF", "SUGESTIF", 
+  "SUKSESIF", "SUMATIF", "SUPORTIF", "SUPRESIF", "SYARIF", "TARIF", "TRANSFORMATIF", 
+  "TENTATIF", "TRANSITIF", "TRANSLATIF",
+  // Image 2
+  "VEGETATIF", "VARIATIF", "VERIFIKATIF", "YUDIKATIF"
 ]
 
 async function main() {
-  console.log('Seeding words wave 10...')
+  console.log('Seeding words wave 12...')
   let added = 0
   let skipped = 0
 
@@ -43,7 +36,7 @@ async function main() {
     }
   }
 
-  console.log(`Finished wave 10: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
+  console.log(`Finished wave 12: ${added} added, ${skipped} skipped. Total unique in list: ${uniqueWords.length}`)
 }
 
 main()

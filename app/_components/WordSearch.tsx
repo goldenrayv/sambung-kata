@@ -128,34 +128,35 @@ export default function WordSearch({ token, wordCount }: Props) {
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
   const groupedPrefix = prefixResults.reduce((acc, word) => {
     const w = word.toUpperCase();
-    let bestSuffix = "Other";
-    let score = 0;
+    const matchedSuffixes: { suffix: string; score: number }[] = [];
 
-    // Find the best matching strategic suffix
+    // Check all matching strategic suffixes (1, 2, and 3 letters)
+    // 3-letter matches
     const s3 = w.slice(-3);
     const r3 = bestRatios?.top3.find(r => r.suffix.toUpperCase() === s3 && MAGIC_3.includes(s3));
-    if (r3) {
-        bestSuffix = `-${s3}`;
-        score = r3.ratio;
+    if (r3) matchedSuffixes.push({ suffix: `-${s3}`, score: r3.ratio });
+
+    // 2-letter matches
+    const s2 = w.slice(-2);
+    const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
+    if (r2) matchedSuffixes.push({ suffix: `-${s2}`, score: r2.ratio });
+
+    // 1-letter matches
+    const s1 = w.slice(-1);
+    const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
+    if (r1) matchedSuffixes.push({ suffix: `-${s1}`, score: r1.ratio });
+
+    if (matchedSuffixes.length > 0) {
+      matchedSuffixes.forEach(({ suffix, score }) => {
+        if (!acc[suffix]) acc[suffix] = { words: [], score };
+        acc[suffix].words.push(word);
+      });
     } else {
-        const s2 = w.slice(-2);
-        const r2 = bestRatios?.top2.find(r => r.suffix.toUpperCase() === s2 && MAGIC_2.includes(s2));
-        if (r2) {
-            bestSuffix = `-${s2}`;
-            score = r2.ratio;
-        } else {
-            const s1 = w.slice(-1);
-            const r1 = bestRatios?.top1.find(r => r.suffix.toUpperCase() === s1 && MAGIC_1.includes(s1));
-            if (r1) {
-                bestSuffix = `-${s1}`;
-                score = r1.ratio;
-            }
-        }
+      // If no tactical match, put in Other
+      if (!acc["Other"]) acc["Other"] = { words: [], score: 0 };
+      acc["Other"].words.push(word);
     }
 
-    // ALWAYS add to grouped results
-    if (!acc[bestSuffix]) acc[bestSuffix] = { words: [], score };
-    acc[bestSuffix].words.push(word);
     return acc;
   }, {} as Record<string, { words: string[], score: number }>);
 

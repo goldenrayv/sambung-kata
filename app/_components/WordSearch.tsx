@@ -44,10 +44,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
   }, []);
 
   useEffect(() => {
-    if (rightSideMode === 'review') {
-      fetchReviews();
+    if (rightSideMode === 'review' && search.trim()) {
+      fetchReviews(search.trim());
     }
-  }, [rightSideMode]);
+  }, [rightSideMode, search]);
 
   const fetchReviews = async (query?: string) => {
     setLoadingReviews(true);
@@ -87,6 +87,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
     if (!search.trim()) {
       setPrefixResults([]);
       setSuffixResults([]);
+      setReviews([]); // Also clear reviews
       setIsSearching(false);
       return;
     }
@@ -127,10 +128,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
   }, [search, userId, rightSideMode]);
 
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
-  const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
-  const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
-  const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
-  const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI", "IC"];
+  const HARDCODED = ["OI", "LY", "TY", "IF", "GY", "CY", "IC", "EZ", "SN", "ND", "KS", "OA", "OH", "EI", "OO", "TT", "HIH", "HUH", "LEU", "NEU"];
 
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
   const groupedPrefix = prefixResults.reduce((acc, wordObj: any) => {
@@ -142,15 +140,6 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
       if (word.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
     }
 
-    // TIER 1: MAGIC Strategic Suffixes
-    const s3 = word.slice(-3);
-    if (MAGIC_3.includes(s3)) matchedSuffixes.push({ suffix: `-${s3}`, tier: 1 });
-
-    const s2 = word.slice(-2);
-    if (MAGIC_2.includes(s2)) matchedSuffixes.push({ suffix: `-${s2}`, tier: 1 });
-
-    const s1 = word.slice(-1);
-    if (MAGIC_1.includes(s1)) matchedSuffixes.push({ suffix: `-${s1}`, tier: 1 });
 
     if (matchedSuffixes.length > 0) {
       const bestMatch = matchedSuffixes[0];
@@ -191,17 +180,40 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
 
   const sortedSuffixLetters = Object.keys(groupedSuffix).sort();
   
-  // Group reviews by first letter
-  const groupedReviews = reviews.reduce(
-    (acc, review: any) => {
-      const letter = review.word[0].toUpperCase();
-      if (!acc[letter]) acc[letter] = [];
-      acc[letter].push(review);
-      return acc;
-    },
-    {} as Record<string, any[]>
-  );
-  const sortedReviewLetters = Object.keys(groupedReviews).sort();
+  // Strategic Grouping for Review Data: Mirroring Prefix Logic
+  const groupedReviews = reviews.reduce((acc, review: any) => {
+    const word = review.word.toUpperCase();
+    const matchedSuffixes: { suffix: string; tier: number }[] = [];
+
+    // TIER 1: HARDCODED Suffixes
+    for (const h of HARDCODED) {
+      if (word.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
+    }
+
+
+    if (matchedSuffixes.length > 0) {
+      const bestMatch = matchedSuffixes[0];
+      if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], tier: bestMatch.tier };
+      acc[bestMatch.suffix].words.push(review);
+    } else {
+      // TIER 2: Everything Else
+      if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
+      acc["Other"].words.push(review);
+    }
+
+    return acc;
+  }, {} as Record<string, { words: any[], tier: number }>);
+
+  const sortedReviewSuffixes = Object.keys(groupedReviews).sort((a, b) => {
+    if (a === "Other") return 1;
+    if (b === "Other") return -1;
+    
+    const groupA = groupedReviews[a];
+    const groupB = groupedReviews[b];
+    
+    if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
+    return a.localeCompare(b);
+  });
   
   return (
     <div className="w-full relative z-10 space-y-8 pb-20">
@@ -264,17 +276,6 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
         {/* Tactical Quick-Select Badges - Simplified below search bar */}
         <div className="max-w-3xl mx-auto mt-6 space-y-3 animate-in fade-in slide-in-from-top-4 duration-1000">
           <div className="flex flex-wrap gap-2">
-            {[...MAGIC_1, ...MAGIC_2, ...MAGIC_3].sort().map((s) => (
-              <button
-                key={s}
-                onClick={() => setSearch(s)}
-                className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/70 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
-              >
-                -{s}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
             {HARDCODED.map((s) => (
               <button
                 key={s}
@@ -406,27 +407,60 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                   )}
                 </div>
                 
-                {/* Alphabet Quick-Index aligned horizontally */}
-                {sortedSuffixLetters.length > 0 && (
-                  <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
-                    {sortedSuffixLetters.map((letter) => (
-                      <button
-                        key={letter}
-                        onClick={() => {
-                            const el = document.getElementById(`letter-${letter}`);
-                            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }}
-                        className="flex items-center justify-center w-6 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer"
-                      >
-                        {letter}
-                      </button>
-                    ))}
-                  </div>
+                {/* Tactical Quick-Index for Suffix or Review */}
+                {rightSideMode === 'suffix' ? (
+                  sortedSuffixLetters.length > 0 && (
+                    <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
+                      {sortedSuffixLetters.map((letter) => (
+                        <button
+                          key={letter}
+                          onClick={() => {
+                              const el = document.getElementById(`letter-${letter}`);
+                              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="flex items-center justify-center w-6 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer"
+                        >
+                          {letter}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                ) : (
+                  sortedReviewSuffixes.length > 0 && (
+                    <div className="flex flex-wrap gap-1 animate-in fade-in slide-in-from-right-4 duration-500">
+                      {sortedReviewSuffixes.filter(s => s !== "Other").map((suffix) => (
+                        <button
+                          key={suffix}
+                          onClick={() => {
+                              const el = document.getElementById(`review-group-${suffix}`);
+                              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="flex items-center justify-center px-2 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[9px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
+                        >
+                          {suffix}
+                        </button>
+                      ))}
+                      {groupedReviews["Other"] && (
+                        <button
+                          key="Other"
+                          onClick={() => {
+                              const el = document.getElementById(`review-group-Other`);
+                              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="flex items-center justify-center px-2 h-6 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
+                        >
+                          Other
+                        </button>
+                      )}
+                    </div>
+                  )
                 )}
               </div>
-
+              
               <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
-                <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
+                <span className="opacity-80 whitespace-nowrap italic">
+                  {rightSideMode === 'suffix' ? 'Ends with' : 'Search Review for'}
+                </span>
                 <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
               </div>
             </div>
@@ -472,15 +506,15 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                     <div className="flex items-center justify-center py-20">
                       <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
                     </div>
-                  ) : sortedReviewLetters.length > 0 ? (
-                    sortedReviewLetters.map((letter) => (
-                      <div key={letter} id={`review-letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                  ) : sortedReviewSuffixes.length > 0 ? (
+                    sortedReviewSuffixes.map((suffix) => (
+                      <div key={suffix} id={`review-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
-                          <div className="h-[1px] flex-1 bg-orange-500/10" />
+                          <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{suffix.toUpperCase()}</span>
+                          <div className="h-[1px] w-12 bg-orange-500/10" />
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-2">
-                          {groupedReviews[letter].map((review: any) => (
+                          {groupedReviews[suffix].words.map((review: any) => (
                             <WordCard 
                               key={review.id} 
                               word={review.word} 
@@ -494,6 +528,16 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                         </div>
                       </div>
                     ))
+                  ) : search && !isSearching ? (
+                    <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
+                      <div className="inline-flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                          <X className="w-6 h-6 text-orange-500 opacity-80" />
+                        </div>
+                        <p className="text-sm font-black text-white tracking-widest uppercase opacity-80">No review results</p>
+                        <p className="text-[10px] text-white/60 mt-1 font-bold italic">Try a different letter combination</p>
+                      </div>
+                    </div>
                   ) : (
                     <div className="py-20 text-center opacity-80">
                       <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-40" />

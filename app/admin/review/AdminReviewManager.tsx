@@ -55,8 +55,8 @@ export default function AdminReviewManager() {
           <Textarea
             value={bulkInput}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBulkInput(e.target.value)}
-            placeholder="ADD_WORDS_TO_REVIEW_QUEUE..."
-            className="w-full bg-neutral-900/40 border-white/5 text-white placeholder:text-white/40 focus:ring-rose-500/10 focus:border-rose-500/30 rounded-lg min-h-[38px] h-[38px] max-h-32 py-2.5 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner resize-none scrollbar-hide"
+            placeholder="Ingest to review queue..."
+            className="w-full bg-neutral-900/40 border-white/5 text-white placeholder:text-white/40 focus:ring-rose-500/10 focus:border-rose-500/30 rounded-lg min-h-[32px] h-[32px] py-1.5 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner resize-y scrollbar-hide"
           />
           {bulkInput.trim() && (
              <div className="absolute right-3 top-2.5 pointer-events-none animate-in fade-in zoom-in duration-300">

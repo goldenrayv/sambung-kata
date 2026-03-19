@@ -116,7 +116,7 @@ export default function AdminWordManager() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="FILTER_BY_TERM..."
+                  placeholder="Filter key terms..."
                   className="w-full pl-10 bg-neutral-900/40 border-white/10 text-white placeholder-white/40 focus:ring-orange-500/10 focus:border-orange-500/30 rounded-lg h-9 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner"
                 />
                 {search && (
@@ -151,8 +151,8 @@ export default function AdminWordManager() {
               <Textarea
                 value={bulkInput}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBulkInput(e.target.value)}
-                placeholder="INGEST_TO_CORE_REPOSITORY..."
-                className="w-full bg-neutral-900/40 border-white/5 text-white placeholder:text-white/40 focus:ring-orange-500/10 focus:border-orange-500/30 rounded-lg min-h-[38px] h-[38px] max-h-32 py-2.5 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner resize-none scrollbar-hide"
+                placeholder="Ingest to repository..."
+                className="w-full bg-neutral-900/40 border-white/5 text-white placeholder:text-white/40 focus:ring-orange-500/10 focus:border-orange-500/30 rounded-lg min-h-[32px] h-[32px] py-1.5 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner resize-y scrollbar-hide"
               />
               {bulkInput.trim() && (
                  <div className="absolute right-3 top-2.5 pointer-events-none animate-in fade-in zoom-in duration-300">
@@ -182,7 +182,7 @@ export default function AdminWordManager() {
 
       {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-md rounded-[28px] p-0 overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.15)]">
+        <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-2xl rounded-[28px] p-0 overflow-hidden shadow-[0_0_80px_rgba(249,115,22,0.15)]">
           <div className="p-6 space-y-6 max-h-[80vh] flex flex-col font-sans">
             <DialogHeader>
                 <div className="flex items-center gap-3">

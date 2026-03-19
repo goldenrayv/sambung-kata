@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Book } from "lucide-react";
+import { LayoutDashboard, Users, Book, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminLogout } from "@/app/actions";
 import { LogOut, Home } from "lucide-react";
@@ -11,6 +11,7 @@ const menuItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "User Management", href: "/admin/users", icon: Users },
   { name: "Word Repository", href: "/admin/words", icon: Book },
+  { name: "Word Review", href: "/admin/review", icon: ClipboardCheck },
 ];
 
 export function AdminSidebar() {

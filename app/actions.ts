@@ -3,7 +3,8 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { prisma as prismaInstance } from "@/lib/prisma";
+const prisma = prismaInstance as any;
 import { revalidatePath } from "next/cache";
 
 
@@ -66,10 +67,10 @@ export async function checkNewWords(words: string[]) {
     select: { word: true }
   });
   
-  const existingSet = new Set(existing.map(e => e.word.toUpperCase()));
+  const existingSet = new Set(existing.map((e: any) => e.word.toUpperCase()));
   
-  const newWords = uniqueWords.filter(w => !existingSet.has(w));
-  const existingWords = uniqueWords.filter(w => existingSet.has(w));
+  const newWords = uniqueWords.filter((w: any) => !existingSet.has(w));
+  const existingWords = uniqueWords.filter((w: any) => existingSet.has(w));
   
   return { newWords, existingWords };
 }
@@ -113,6 +114,98 @@ export async function toggleWordStatus(id: string, currentlyActive: boolean) {
   revalidatePath("/admin/words");
 }
 
+export async function deleteWord(id: string) {
+  try {
+    await prisma.word.delete({
+      where: { id },
+    });
+    revalidatePath("/admin/words");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Delete failed:", error);
+    return { success: false, error: error.message || "Failed to delete word" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Word Review — admin
+// ---------------------------------------------------------------------------
+
+export async function getWordReviewCount(): Promise<number> {
+  return prisma.wordReview.count({ where: { status: "new" } });
+}
+
+export async function getWordReviews(page: number = 1, pageSize: number = 50, search?: string) {
+  return prisma.wordReview.findMany({
+    where: { 
+      status: "new",
+      ...(search ? { word: { startsWith: search, mode: 'insensitive' } } : {})
+    },
+    orderBy: { createdAt: "desc" },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
+}
+
+export async function insertBulkWordReviews(words: string[]) {
+  if (words.length === 0) return { success: true };
+  
+  try {
+    const uppercaseWords = Array.from(new Set(words.map(word => word.toUpperCase().trim()).filter(Boolean)));
+    
+    // Batch processing
+    const BATCH_SIZE = 1000;
+    for (let i = 0; i < uppercaseWords.length; i += BATCH_SIZE) {
+      const batch = uppercaseWords.slice(i, i + BATCH_SIZE);
+      await prisma.wordReview.createMany({
+        data: batch.map(word => ({ 
+          word,
+        })),
+      });
+    }
+    
+    revalidatePath("/admin/review");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Bulk review insert failed:", error);
+    return { 
+      success: false, 
+      error: error.message || "Failed to insert words for review." 
+    };
+  }
+}
+
+export async function processWordReview(id: string, action: 'accept' | 'reject') {
+  try {
+    const reviewItem = await prisma.wordReview.findUnique({ where: { id } });
+    if (!reviewItem) return { success: false, error: "Review item not found" };
+
+    if (action === 'accept') {
+      // Check if word already exists in Word table to avoid unique constraint error
+      const existing = await prisma.word.findUnique({ where: { word: reviewItem.word } });
+      if (!existing) {
+        await prisma.word.create({ data: { word: reviewItem.word } });
+      }
+      
+      await prisma.wordReview.update({
+        where: { id },
+        data: { status: "accepted" }
+      });
+    } else {
+      await prisma.wordReview.update({
+        where: { id },
+        data: { status: "rejected" }
+      });
+    }
+
+    revalidatePath("/admin/review");
+    revalidatePath("/admin/words");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Users / Credentials — admin
 // ---------------------------------------------------------------------------
@@ -144,13 +237,13 @@ export async function extendUserExpiry(id: string, days: number) {
   return { success: true };
 }
 
-export async function createUser(username: string, password: string, days: number = 30) {
+export async function createUser(username: string, password: string, days: number = 30, isSuperUser: boolean = false) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + days);
 
   try {
     await prisma.user.create({
-      data: { username, password, expiresAt },
+      data: { username, password, expiresAt, isSuperUser },
     });
     revalidatePath("/admin/users");
     return { success: true };
@@ -181,6 +274,7 @@ export async function loginUser(username: string, password: string) {
     userId: user.id,
     username: user.username, 
     expiresAt: user.expiresAt,
+    isSuperUser: user.isSuperUser,
     mustChangePassword: !user.isFirstTimePasswordChange
   };
 }

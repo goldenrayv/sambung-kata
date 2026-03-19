@@ -1,23 +1,29 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, BookOpen, X, Command, Layout, Columns } from "lucide-react";
+import { Search, BookOpen, X, Command, Layout, Columns, ClipboardCheck, Trash2, Check, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
+import { getWordReviews, processWordReview, deleteWord } from "@/app/actions";
+import { toast } from "sonner";
 
 interface Props {
   userId: string;
   wordCount: number;
+  isSuperUser: boolean;
 }
 
-export default function WordSearch({ userId, wordCount }: Props) {
+export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [prefixResults, setPrefixResults] = useState<string[]>([]);
   const [suffixResults, setSuffixResults] = useState<string[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuffix, setShowSuffix] = useState(true);
+  const [rightSideMode, setRightSideMode] = useState<'suffix' | 'review'>('suffix');
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
 
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
@@ -38,6 +44,46 @@ export default function WordSearch({ userId, wordCount }: Props) {
   }, []);
 
   useEffect(() => {
+    if (rightSideMode === 'review') {
+      fetchReviews();
+    }
+  }, [rightSideMode]);
+
+  const fetchReviews = async (query?: string) => {
+    setLoadingReviews(true);
+    try {
+      const data = await getWordReviews(1, 100, query);
+      setReviews(data);
+    } catch (error) {
+      console.error("Failed to fetch reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleProcessReview = async (id: string, action: 'accept' | 'reject') => {
+    const result = await processWordReview(id, action);
+    if (result.success) {
+      toast.success(action === 'accept' ? "Word accepted!" : "Word rejected!");
+      fetchReviews();
+    } else {
+      toast.error(result.error || "Failed to process review");
+    }
+  };
+
+  const handleDeleteWord = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this word?")) return;
+    const result = await deleteWord(id);
+    if (result.success) {
+      toast.success("Word deleted successfully");
+      // Trigger a re-search to refresh local state
+      setSearch(prev => prev); 
+    } else {
+      toast.error(result.error || "Failed to delete word");
+    }
+  };
+
+  useEffect(() => {
     if (!search.trim()) {
       setPrefixResults([]);
       setSuffixResults([]);
@@ -49,19 +95,26 @@ export default function WordSearch({ userId, wordCount }: Props) {
 
     const timer = setTimeout(async () => {
       try {
-        const [pRes, sRes] = await Promise.all([
+        const promises: Promise<any>[] = [
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix`, {
             headers: { Authorization: `Bearer ${userId}` },
           }),
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix`, {
             headers: { Authorization: `Bearer ${userId}` },
-          }),
-        ]);
+          })
+        ];
+
+        const [pRes, sRes] = await Promise.all(promises);
 
         if (pRes.ok && sRes.ok) {
           const [pData, sData] = await Promise.all([pRes.json(), sRes.json()]);
           setPrefixResults(pData);
           setSuffixResults(sData);
+        }
+
+        // Also update reviews if in review mode
+        if (rightSideMode === 'review') {
+          fetchReviews(search.trim());
         }
       } catch (error) {
         console.error("Search failed:", error);
@@ -71,7 +124,7 @@ export default function WordSearch({ userId, wordCount }: Props) {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, userId]);
+  }, [search, userId, rightSideMode]);
 
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
@@ -80,37 +133,37 @@ export default function WordSearch({ userId, wordCount }: Props) {
   const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
 
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
-  const groupedPrefix = prefixResults.reduce((acc, word) => {
-    const w = word.toUpperCase();
+  const groupedPrefix = prefixResults.reduce((acc, wordObj: any) => {
+    const word = (wordObj.word || wordObj).toUpperCase();
     const matchedSuffixes: { suffix: string; tier: number }[] = [];
 
     // TIER 1: HARDCODED Suffixes
     for (const h of HARDCODED) {
-      if (w.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
+      if (word.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
     }
 
     // TIER 1: MAGIC Strategic Suffixes
-    const s3 = w.slice(-3);
+    const s3 = word.slice(-3);
     if (MAGIC_3.includes(s3)) matchedSuffixes.push({ suffix: `-${s3}`, tier: 1 });
 
-    const s2 = w.slice(-2);
+    const s2 = word.slice(-2);
     if (MAGIC_2.includes(s2)) matchedSuffixes.push({ suffix: `-${s2}`, tier: 1 });
 
-    const s1 = w.slice(-1);
+    const s1 = word.slice(-1);
     if (MAGIC_1.includes(s1)) matchedSuffixes.push({ suffix: `-${s1}`, tier: 1 });
 
     if (matchedSuffixes.length > 0) {
       const bestMatch = matchedSuffixes[0];
       if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], tier: bestMatch.tier };
-      acc[bestMatch.suffix].words.push(word);
+      acc[bestMatch.suffix].words.push(wordObj);
     } else {
       // TIER 2: Everything Else
       if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
-      acc["Other"].words.push(word);
+      acc["Other"].words.push(wordObj);
     }
 
     return acc;
-  }, {} as Record<string, { words: string[], tier: number }>);
+  }, {} as Record<string, { words: any[], tier: number }>);
 
   // Sort prefix groups by tier first, then alphabetically
   const sortedPrefixSuffixes = Object.keys(groupedPrefix).sort((a, b) => {
@@ -126,16 +179,29 @@ export default function WordSearch({ userId, wordCount }: Props) {
 
   // Group results by first letter (for Suffix side)
   const groupedSuffix = suffixResults.reduce(
-    (acc, word) => {
+    (acc, wordObj: any) => {
+      const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
-      acc[letter].push(word);
+      acc[letter].push(wordObj);
       return acc;
     },
-    {} as Record<string, string[]>
+    {} as Record<string, any[]>
   );
 
   const sortedSuffixLetters = Object.keys(groupedSuffix).sort();
+  
+  // Group reviews by first letter
+  const groupedReviews = reviews.reduce(
+    (acc, review: any) => {
+      const letter = review.word[0].toUpperCase();
+      if (!acc[letter]) acc[letter] = [];
+      acc[letter].push(review);
+      return acc;
+    },
+    {} as Record<string, any[]>
+  );
+  const sortedReviewLetters = Object.keys(groupedReviews).sort();
   
   return (
     <div className="w-full relative z-10 space-y-8 pb-20">
@@ -284,8 +350,15 @@ export default function WordSearch({ userId, wordCount }: Props) {
                     </div>
                   </div>
                   <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2 content-start`}>
-                    {groupedPrefix[suffix].words.map((word) => (
-                      <WordCard key={word} word={word} search={search} searchMode="prefix" />
+                    {groupedPrefix[suffix].words.map((wordObj: any) => (
+                      <WordCard 
+                        key={wordObj.id || wordObj} 
+                        word={wordObj.word || wordObj} 
+                        search={search} 
+                        searchMode="prefix" 
+                        isSuperUser={isSuperUser}
+                        onDelete={isSuperUser ? () => handleDeleteWord(wordObj.id) : undefined}
+                      />
                     ))}
                   </div>
                 </div>
@@ -309,7 +382,29 @@ export default function WordSearch({ userId, wordCount }: Props) {
           <div className="space-y-6 p-6 rounded-2xl bg-orange-500/[0.02] border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] animate-in fade-in slide-in-from-right-4 duration-500">
             <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
               <div className="flex items-center gap-6 w-full flex-wrap">
-                <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">
+                    {rightSideMode === 'suffix' ? 'SUFFIX' : 'REVIEW'}
+                  </h2>
+                  {isSuperUser && (
+                    <button
+                      onClick={() => setRightSideMode(rightSideMode === 'suffix' ? 'review' : 'suffix')}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-[10px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-300 uppercase tracking-widest"
+                    >
+                      {rightSideMode === 'suffix' ? (
+                        <>
+                          <ClipboardCheck className="w-3 h-3" />
+                          Go to Review
+                        </>
+                      ) : (
+                        <>
+                          <Columns className="w-3 h-3" />
+                          Back to Suffix
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 
                 {/* Alphabet Quick-Index aligned horizontally */}
                 {sortedSuffixLetters.length > 0 && (
@@ -337,31 +432,77 @@ export default function WordSearch({ userId, wordCount }: Props) {
             </div>
 
             <div className="space-y-10">
-              {sortedSuffixLetters.length > 0 ? (
-                sortedSuffixLetters.map((letter) => (
-                  <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
-                      <div className="h-[1px] flex-1 bg-orange-500/10" />
+              {rightSideMode === 'suffix' ? (
+                sortedSuffixLetters.length > 0 ? (
+                  sortedSuffixLetters.map((letter) => (
+                    <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
+                        <div className="h-[1px] flex-1 bg-orange-500/10" />
+                      </div>
+                      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2`}>
+                        {groupedSuffix[letter].map((wordObj: any) => (
+                          <WordCard 
+                            key={wordObj.id || wordObj} 
+                            word={wordObj.word || wordObj} 
+                            search={search} 
+                            searchMode="suffix" 
+                            isSuperUser={isSuperUser}
+                            onDelete={isSuperUser ? () => handleDeleteWord(wordObj.id) : undefined}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2`}>
-                      {groupedSuffix[letter].map((word) => (
-                        <WordCard key={word} word={word} search={search} searchMode="suffix" />
-                      ))}
+                  ))
+                ) : search && !isSearching ? (
+                  <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
+                    <div className="inline-flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
+                        <X className="w-6 h-6 text-orange-500 opacity-50" />
+                      </div>
+                      <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
+                      <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
                     </div>
                   </div>
-                ))
-              ) : search && !isSearching ? (
-                <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
-                  <div className="inline-flex flex-col items-center">
-                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                      <X className="w-6 h-6 text-orange-500 opacity-50" />
+                ) : null
+              ) : (
+                /* Word Review Mode */
+                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {loadingReviews ? (
+                    <div className="flex items-center justify-center py-20">
+                      <div className="w-6 h-6 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
                     </div>
-                    <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
-                    <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
-                  </div>
+                  ) : sortedReviewLetters.length > 0 ? (
+                    sortedReviewLetters.map((letter) => (
+                      <div key={letter} id={`review-letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-black text-orange-400 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
+                          <div className="h-[1px] flex-1 bg-orange-500/10" />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-2">
+                          {groupedReviews[letter].map((review: any) => (
+                            <WordCard 
+                              key={review.id} 
+                              word={review.word} 
+                              search={search} 
+                              searchMode="prefix" 
+                              isSuperUser={isSuperUser}
+                              onAccept={() => handleProcessReview(review.id, 'accept')}
+                              onDelete={() => handleProcessReview(review.id, 'reject')}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-20 text-center opacity-40">
+                      <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                      <p className="text-sm font-bold uppercase tracking-widest">Queue Clear</p>
+                      <p className="text-[10px] mt-1">No pending words for review</p>
+                    </div>
+                  )}
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
         )}

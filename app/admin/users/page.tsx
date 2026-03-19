@@ -98,7 +98,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-white/5 bg-white/[0.01] hover:bg-transparent">
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">User Identity</TableHead>
+                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">User Identity & Level</TableHead>
                   <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">Auth Status</TableHead>
                   <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">Expiraton Profile</TableHead>
                   <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30 text-right">Actions</TableHead>
@@ -115,7 +115,8 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.map((user) => {
+                      users.map((u) => {
+                    const user = u as any;
                     const now = new Date();
                     const diffTime = user.expiresAt.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -130,7 +131,14 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                                     <span className="text-white/40 font-bold uppercase text-xs">{user.username.slice(0, 2)}</span>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-base font-bold text-white tracking-tight">{user.username}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base font-bold text-white tracking-tight">{user.username}</span>
+                                        {user.isSuperUser && (
+                                            <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter">
+                                                Super
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <span className="text-[10px] text-white/30 font-mono">ID: {user.id.slice(0, 8)}...</span>
                                 </div>
                            </div>

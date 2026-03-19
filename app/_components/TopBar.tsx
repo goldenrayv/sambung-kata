@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   username: string;
+  isSuperUser: boolean;
   expiresAt: Date;
   onLogout: () => void;
 }
 
-export default function TopBar({ username, expiresAt, onLogout }: Props) {
+export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: Props) {
   const [showTips, setShowTips] = useState(false);
 
   const now = new Date();
@@ -101,7 +102,14 @@ export default function TopBar({ username, expiresAt, onLogout }: Props) {
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center font-bold text-white text-xs shadow-lg">
             {username?.[0]?.toUpperCase()}
           </div>
-          <span className="hidden sm:block text-xs font-medium text-white">{username}</span>
+          <div className="flex flex-col items-start mr-2">
+            <span className="text-xs font-medium text-white">{username}</span>
+            {isSuperUser ? (
+              <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.2em] leading-none mt-0.5">Super User</span>
+            ) : (
+              <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] leading-none mt-0.5">User</span>
+            )}
+          </div>
         </div>
 
         <Button

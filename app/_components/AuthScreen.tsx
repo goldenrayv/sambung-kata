@@ -30,6 +30,7 @@ export default function AuthScreen({
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [showForgotMessage, setShowForgotMessage] = useState(false);
 
   const handleLogin = () => {
     if (!username || !password) {
@@ -119,6 +120,31 @@ export default function AuthScreen({
                   {loading ? "Decrypting..." : "Initialize Session"}
                   {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
+
+                <div className="flex justify-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotMessage(!showForgotMessage)}
+                    className="text-[10px] font-bold text-white/20 hover:text-rose-500/60 uppercase tracking-widest transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
+                {showForgotMessage && (
+                  <div className="bg-rose-500/5 border border-rose-500/10 p-4 rounded-2xl flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex gap-3 items-start">
+                        <AlertCircle className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+                        <p className="text-[11px] leading-relaxed text-rose-200/60 font-medium italic">
+                            Credential recovery requires administrative intervention. Please contact your system supervisor to reset your access key.
+                        </p>
+                      </div>
+                      <div className="h-[1px] bg-rose-500/10 w-full" />
+                      <p className="text-[10px] text-rose-400/80 font-bold uppercase tracking-wider text-center">
+                        Contact TikTok <span className="text-rose-500">@vlodex</span> for access
+                      </p>
+                  </div>
+                )}
               </div>
             ) : (
               // Change Password Form
@@ -190,9 +216,14 @@ export default function AuthScreen({
               </div>
             )}
 
-            <p className="text-[10px] text-center text-white/20 font-bold uppercase tracking-[0.2em]">
-              Authorized Personnel Only
-            </p>
+            <div className="space-y-2">
+              <p className="text-[10px] text-center text-white/20 font-bold uppercase tracking-[0.2em]">
+                Authorized Personnel Only
+              </p>
+              <p className="text-[9px] text-center text-rose-500/40 font-bold uppercase tracking-widest">
+                Contact TikTok @vlodex to gain access
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

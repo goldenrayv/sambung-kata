@@ -10,7 +10,7 @@ import { toast } from "sonner";
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date } | null>(null);
+  const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date; isSuperUser: boolean } | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [mustChangePassword, setMustChangePassword] = useState(false);
 
@@ -20,11 +20,13 @@ export default function Home() {
     const savedUsername = localStorage.getItem("sk_username");
     const savedExpiry = localStorage.getItem("sk_expires_at");
 
+    const savedSuper = localStorage.getItem("sk_is_superuser") === "true";
     if (savedId && savedUsername && savedExpiry) {
       setUser({ 
         id: savedId, 
         username: savedUsername, 
-        expiresAt: new Date(savedExpiry) 
+        expiresAt: new Date(savedExpiry),
+        isSuperUser: savedSuper
       });
       setIsAuthenticated(true);
       fetchWordCount();
@@ -50,18 +52,21 @@ export default function Home() {
         setUser({ 
             id: result.userId!, 
             username: username, 
-            expiresAt: result.expiresAt! 
+            expiresAt: result.expiresAt!,
+            isSuperUser: !!result.isSuperUser
         });
         setIsAuthenticated(false); // Stay on auth screen but in "change password" mode
       } else {
         localStorage.setItem("sk_user_id", result.userId!);
         localStorage.setItem("sk_username", username);
         localStorage.setItem("sk_expires_at", result.expiresAt!.toISOString());
+        localStorage.setItem("sk_is_superuser", result.isSuperUser ? "true" : "false");
         
         setUser({ 
             id: result.userId!, 
             username: username, 
-            expiresAt: result.expiresAt! 
+            expiresAt: result.expiresAt!,
+            isSuperUser: !!result.isSuperUser
         });
         setIsAuthenticated(true);
         fetchWordCount();
@@ -93,6 +98,7 @@ export default function Home() {
     localStorage.removeItem("sk_user_id");
     localStorage.removeItem("sk_username");
     localStorage.removeItem("sk_expires_at");
+    localStorage.removeItem("sk_is_superuser");
     setIsAuthenticated(false);
     setUser(null);
     setMustChangePassword(false);
@@ -129,10 +135,11 @@ export default function Home() {
 
       <TopBar
         username={user!.username}
+        isSuperUser={user!.isSuperUser}
         expiresAt={user!.expiresAt}
         onLogout={handleLogout}
       />
-      <WordSearch userId={user!.id} wordCount={wordCount} />
+      <WordSearch userId={user!.id} wordCount={wordCount} isSuperUser={user!.isSuperUser} />
     </main>
   );
 }

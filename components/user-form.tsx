@@ -25,10 +25,12 @@ import {
 export function UserForm() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [isSuperUser, setIsSuperUser] = useState(false);
   const [createdUser, setCreatedUser] = useState<{
     username: string;
     password: string;
     expiryDate: string;
+    isSuperUser: boolean;
   } | null>(null);
 
   const generatePassword = () => {
@@ -49,7 +51,7 @@ export function UserForm() {
     const days = parseInt(formData.get("days") as string) || 30;
     const password = generatePassword();
 
-    const result = await createUser(username, password, days);
+    const result = await createUser(username, password, days, isSuperUser);
 
     if (result.success) {
       const expiryDate = new Date();
@@ -58,6 +60,7 @@ export function UserForm() {
       setCreatedUser({
         username,
         password,
+        isSuperUser: isSuperUser,
         expiryDate: expiryDate.toLocaleDateString('en-GB', { 
           day: '2-digit', 
           month: 'long', 
@@ -65,6 +68,7 @@ export function UserForm() {
         }),
       });
       setShowModal(true);
+      setIsSuperUser(false);
       (e.target as HTMLFormElement).reset();
     } else {
       toast.error(result.error || "Failed to create user");
@@ -105,12 +109,24 @@ export function UserForm() {
               </SelectContent>
             </Select>
           </div>
+          <div className="flex items-center gap-2 bg-neutral-800/50 border border-white/10 rounded-xl px-4 h-12 transition-all hover:bg-neutral-800/80">
+            <input 
+              type="checkbox" 
+              id="isSuperUser" 
+              checked={isSuperUser}
+              onChange={(e) => setIsSuperUser(e.target.checked)}
+              className="w-4 h-4 rounded border-white/20 bg-neutral-700 text-rose-500 focus:ring-rose-500/20"
+            />
+            <label htmlFor="isSuperUser" className="text-xs font-bold text-white/70 uppercase tracking-widest cursor-pointer select-none">
+              Super User
+            </label>
+          </div>
           <Button 
             disabled={loading}
             className="bg-rose-600 hover:bg-rose-500 text-white font-bold h-12 px-8 rounded-xl transition-all shadow-lg shadow-rose-900/20 active:scale-[0.98] disabled:opacity-50"
           >
             <UserPlus className="w-5 h-5 mr-2" />
-            {loading ? "Creating..." : "Add User"}
+            {loading ? "Creating..." : "+ add"}
           </Button>
         </div>
       </form>
@@ -137,9 +153,6 @@ export function UserForm() {
                 <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Username</span>
                 <div className="flex items-center justify-between group">
                   <span className="text-lg font-mono font-bold text-white tracking-tight">{createdUser.username}</span>
-                  <button onClick={() => copyToClipboard(createdUser.username)} className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white">
-                    <Copy className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
 
@@ -149,9 +162,20 @@ export function UserForm() {
                   <span className="text-lg font-mono font-black text-rose-400 tracking-wider">
                     {createdUser.password}
                   </span>
-                  <button onClick={() => copyToClipboard(createdUser.password)} className="p-2 hover:bg-rose-500/20 rounded-lg transition-colors text-rose-500/40 hover:text-rose-500">
-                    <Copy className="w-4 h-4" />
-                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 p-4 rounded-2xl bg-white/5 border border-white/5">
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Account Type</span>
+                <div className="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-2">
+                   {createdUser.isSuperUser ? (
+                       <>
+                           <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                           <span className="text-rose-400">System Superuser</span>
+                       </>
+                   ) : (
+                       <span className="text-white/60">Standard Account</span>
+                   )}
                 </div>
               </div>
 
@@ -163,12 +187,25 @@ export function UserForm() {
           )}
 
           <DialogFooter className="relative z-10">
-            <Button 
-                onClick={() => setShowModal(false)}
-                className="w-full bg-white text-black hover:bg-neutral-200 h-12 rounded-2xl font-bold transition-all"
-            >
-              Done & Close
-            </Button>
+            <div className="flex flex-col gap-3 w-full relative z-10">
+              <Button 
+                  onClick={() => {
+                    const text = `Username: ${createdUser?.username}\nPassword: ${createdUser?.password}\nAccount Type: ${createdUser?.isSuperUser ? "Superuser" : "Standard"}\nExpires On: ${createdUser?.expiryDate}`;
+                    copyToClipboard(text);
+                  }}
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white h-12 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                Copy All Credentials
+              </Button>
+              <Button 
+                  onClick={() => setShowModal(false)}
+                  variant="ghost"
+                  className="w-full text-white/40 hover:text-white hover:bg-white/5 h-10 rounded-xl font-bold transition-all"
+              >
+                Done & Close
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

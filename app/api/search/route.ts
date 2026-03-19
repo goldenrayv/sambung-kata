@@ -44,12 +44,12 @@ export async function GET(req: Request) {
           word: { endsWith: s, mode: "insensitive" }
         }))
       },
-      select: { word: true },
+      select: { id: true, word: true },
       take: LIMIT,
       orderBy: { word: "asc" },
     });
 
-    let results = strategicResults.map(r => r.word);
+    let results = strategicResults;
 
     // 2. If we have space, fill with Other words
     if (results.length < LIMIT) {
@@ -62,11 +62,11 @@ export async function GET(req: Request) {
             word: { endsWith: s, mode: "insensitive" }
           }))
         },
-        select: { word: true },
+        select: { id: true, word: true },
         take: remaining,
         orderBy: { word: "asc" },
       });
-      results = [...results, ...otherResults.map(r => r.word)];
+      results = [...results, ...otherResults];
     }
 
     return NextResponse.json(results);
@@ -80,10 +80,10 @@ export async function GET(req: Request) {
         ? { endsWith: q, mode: "insensitive" } 
         : { contains: q, mode: "insensitive" } 
     },
-    select: { word: true },
+    select: { id: true, word: true },
     take: LIMIT,
     orderBy: { word: "asc" },
   });
 
-  return NextResponse.json(results.map((r) => r.word));
+  return NextResponse.json(results);
 }

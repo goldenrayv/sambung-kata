@@ -1,22 +1,17 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 
-function hashToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
 export async function GET(req: Request) {
-  // --- Auth: validate the bearer token ---
+  // --- Auth: validate the userId ---
   const auth = req.headers.get("Authorization") ?? "";
-  const rawToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const userId = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 
-  if (!rawToken) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await prisma.user.findUnique({
-    where: { token: hashToken(rawToken) },
+    where: { id: userId },
   });
 
   if (!user || user.expiresAt < new Date()) {

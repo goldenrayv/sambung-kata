@@ -7,11 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 
 interface Props {
-  token: string;
+  userId: string;
   wordCount: number;
 }
 
-export default function WordSearch({ token, wordCount }: Props) {
+export default function WordSearch({ userId, wordCount }: Props) {
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [prefixResults, setPrefixResults] = useState<string[]>([]);
@@ -51,10 +51,10 @@ export default function WordSearch({ token, wordCount }: Props) {
       try {
         const [pRes, sRes] = await Promise.all([
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${userId}` },
           }),
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${userId}` },
           }),
         ]);
 
@@ -71,7 +71,7 @@ export default function WordSearch({ token, wordCount }: Props) {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, token]);
+  }, [search, userId]);
 
   // Hardcoded Strategic Suffixes (Tactical Kill-Zone)
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];

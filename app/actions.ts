@@ -6,12 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-// ---------------------------------------------------------------------------
-// Shared helper — hash a raw token with SHA-256 so we never store plaintext
-// ---------------------------------------------------------------------------
-function hashToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
+
 
 // ---------------------------------------------------------------------------
 // Words — public
@@ -119,7 +114,7 @@ export async function toggleWordStatus(id: string, currentlyActive: boolean) {
 }
 
 // ---------------------------------------------------------------------------
-// Users / Tokens — admin
+// Users / Credentials — admin
 // ---------------------------------------------------------------------------
 export async function getUsers(search?: string) {
   return prisma.user.findMany({
@@ -133,7 +128,7 @@ export async function getUsers(search?: string) {
   });
 }
 
-export async function extendUserToken(id: string, days: number) {
+export async function extendUserExpiry(id: string, days: number) {
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) return { success: false, error: "User not found" };
 
@@ -145,43 +140,75 @@ export async function extendUserToken(id: string, days: number) {
     data: { expiresAt: newExpiry }
   });
 
-  revalidatePath("/admin/tokens");
+  revalidatePath("/admin/users");
   return { success: true };
 }
 
-export async function createToken(username: string, token: string, days: number = 30) {
+export async function createUser(username: string, password: string, days: number = 30) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + days);
 
   try {
     await prisma.user.create({
-      data: { username, token: hashToken(token), expiresAt },
+      data: { username, password, expiresAt },
     });
-    revalidatePath("/admin/tokens");
+    revalidatePath("/admin/users");
     return { success: true };
   } catch {
-    return { success: false, error: "Username or Token already exists." };
+    return { success: false, error: "Username already exists." };
   }
 }
 
 export async function deleteUser(id: string) {
   await prisma.user.delete({ where: { id } });
-  revalidatePath("/admin/tokens");
+  revalidatePath("/admin/users");
 }
 
 // ---------------------------------------------------------------------------
 // Auth — public
 // ---------------------------------------------------------------------------
-export async function validateToken(token: string) {
+export async function loginUser(username: string, password: string) {
   const user = await prisma.user.findUnique({
-    where: { token: hashToken(token) },
+    where: { username },
   });
 
-  if (!user) return { valid: false, error: "Invalid Access Token" };
-  if (user.expiresAt < new Date()) return { valid: false, error: "Token expired" };
+  if (!user) return { success: false, error: "Invalid username or password" };
+  if (user.password !== password) return { success: false, error: "Invalid username or password" };
+  if (user.expiresAt < new Date()) return { success: false, error: "Account expired" };
 
-  return { valid: true, username: user.username, expiresAt: user.expiresAt };
+  return { 
+    success: true, 
+    userId: user.id,
+    username: user.username, 
+    expiresAt: user.expiresAt,
+    mustChangePassword: !user.isFirstTimePasswordChange
+  };
 }
+
+export async function changePassword(id: string, oldPassword: string, newPassword: string) {
+  if (newPassword.length < 6) {
+    return { success: false, error: "New password must be at least 6 characters" };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!user || user.password !== oldPassword) {
+    return { success: false, error: "Invalid current password" };
+  }
+
+  await prisma.user.update({
+    where: { id },
+    data: { 
+      password: newPassword,
+      isFirstTimePasswordChange: true
+    }
+  });
+
+  return { success: true };
+}
+
 
 // ---------------------------------------------------------------------------
 // Admin session management

@@ -1,72 +1,197 @@
 "use client";
 
-import { ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, AlertCircle, ShieldCheck, User, Lock, KeyRound, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface Props {
-  tokenInput: string;
-  setTokenInput: (v: string) => void;
-  authError: string;
   loading: boolean;
-  onAuth: (token: string) => void;
+  onAuth: (username: string, password: string) => void;
+  mustChangePassword?: boolean;
+  onChangePassword?: (current: string, newPass: string) => void;
+  initialUsername?: string;
 }
 
 export default function AuthScreen({
-  tokenInput,
-  setTokenInput,
-  authError,
   loading,
   onAuth,
+  mustChangePassword = false,
+  onChangePassword,
+  initialUsername = "",
 }: Props) {
+  const [username, setUsername] = useState(initialUsername);
+  const [password, setPassword] = useState("");
+  
+  // Change Password State
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLogin = () => {
+    if (!username || !password) {
+      setError("Please enter both username and password.");
+      return;
+    }
+    setError("");
+    onAuth(username, password);
+  };
+
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setError("");
+    onChangePassword?.(currentPassword, newPassword);
+  };
+
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.1),transparent_40%)]">
       <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <div className="text-center space-y-4">
-          <div className="inline-flex p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 mb-2">
-            <ShieldCheck className="w-8 h-8" />
+          <div className="inline-flex p-4 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 mb-2 shadow-[0_0_30px_rgba(244,63,94,0.1)]">
+            {mustChangePassword ? <KeyRound className="w-8 h-8" /> : <ShieldCheck className="w-8 h-8" />}
           </div>
-          <h1 className="text-4xl font-bold tracking-tight font-heading">Access Protected</h1>
-          <p className="text-white">
-            Please enter your unique access token to use the Sambung Kata cheat sheet.
+          <h1 className="text-4xl font-black tracking-tight font-heading">
+            {mustChangePassword ? "Security Update" : "Terminal Access"}
+          </h1>
+          <p className="text-white/40 text-sm font-medium uppercase tracking-widest">
+            {mustChangePassword 
+              ? "Mandatory password rotation required" 
+              : "Authentication required to enter core system"}
           </p>
         </div>
 
-        <Card className="bg-neutral-900/50 backdrop-blur-xl border-white/10 shadow-2xl overflow-hidden rounded-3xl">
-          <CardContent className="p-8 space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-white ml-1">Access Token</label>
-              <div className="relative group">
-                <Input
-                  type="password"
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder="sk_••••••••••••"
-                  className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-white/40 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
-                  onKeyDown={(e) => e.key === "Enter" && onAuth(tokenInput)}
-                  disabled={loading}
-                />
+        <Card className="bg-neutral-900/40 backdrop-blur-2xl border-white/5 shadow-2xl overflow-hidden rounded-[40px]">
+          <CardContent className="p-10 space-y-8">
+            {!mustChangePassword ? (
+              // Login Form
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Identity Node</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-rose-500 transition-colors" />
+                      <Input
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Username"
+                        className="w-full bg-white/[0.02] border-white/5 rounded-2xl pl-12 pr-4 py-7 text-white placeholder-white/10 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-lg font-bold tracking-tight"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Access Key</label>
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-rose-500 transition-colors" />
+                      <Input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-white/[0.02] border-white/5 rounded-2xl pl-12 pr-4 py-7 text-white placeholder-white/10 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-lg font-bold tracking-tight"
+                        onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <Button
-                  size="icon"
-                  onClick={() => onAuth(tokenInput)}
+                  onClick={handleLogin}
                   disabled={loading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-rose-600 hover:bg-rose-500 transition-colors shadow-lg rounded-lg h-12 w-12"
+                  className="w-full h-14 bg-white text-black hover:bg-neutral-200 transition-all shadow-xl rounded-2xl text-xs font-black uppercase tracking-widest active:scale-[0.98] disabled:opacity-50"
                 >
-                  <ArrowRight className="w-5 h-5" />
+                  {loading ? "Decrypting..." : "Initialize Session"}
+                  {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                 </Button>
               </div>
-            </div>
+            ) : (
+              // Change Password Form
+              <div className="space-y-6">
+                <div className="bg-orange-500/5 border border-orange-500/10 p-4 rounded-2xl flex gap-3 items-start">
+                    <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                    <p className="text-[11px] leading-relaxed text-orange-200/60 font-medium italic">
+                        Your account requires a password update before proceeding. New password must be at least 6 characters.
+                    </p>
+                </div>
 
-            {authError && (
-              <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/5 border border-red-400/20 p-3 rounded-xl animate-in shake duration-300">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{authError}</span>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Current Key</label>
+                    <Input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="Current password"
+                      className="w-full bg-white/[0.02] border-white/5 rounded-2xl px-5 py-6 text-white placeholder-white/10 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-base font-bold tracking-tight"
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">New Access Key</label>
+                    <Input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="New password (min 6 chars)"
+                      className="w-full bg-white/[0.02] border-white/5 rounded-2xl px-5 py-6 text-white placeholder-white/10 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-base font-bold tracking-tight"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/30 ml-1">Confirm New Key</label>
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm new password"
+                      className="w-full bg-white/[0.02] border-white/5 rounded-2xl px-5 py-6 text-white placeholder-white/10 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-base font-bold tracking-tight"
+                      onKeyDown={(e) => e.key === "Enter" && handleChangePassword()}
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleChangePassword}
+                  disabled={loading}
+                  className="w-full h-14 bg-emerald-500 text-white hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/10 rounded-2xl text-xs font-black uppercase tracking-widest active:scale-[0.98] disabled:opacity-50"
+                >
+                  {loading ? "Syncing..." : "Update & Sync"}
+                  {!loading && <CheckCircle2 className="w-4 h-4 ml-2" />}
+                </Button>
               </div>
             )}
 
-            <p className="text-xs text-center text-white/60">
-              Contact your administrator to request a new key.
+            {(error || (mustChangePassword === false && initialUsername === "" && error === "" && username === "" && password === "" && "")) && (
+              <div className={cn(
+                "flex items-center gap-2 text-sm p-4 rounded-2xl animate-in shake duration-300",
+                error ? "text-red-400 bg-red-400/5 border border-red-400/10" : "hidden"
+              )}>
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span className="font-bold tracking-tight">{error}</span>
+              </div>
+            )}
+
+            <p className="text-[10px] text-center text-white/20 font-bold uppercase tracking-[0.2em]">
+              Authorized Personnel Only
             </p>
           </CardContent>
         </Card>
@@ -74,3 +199,4 @@ export default function AuthScreen({
     </main>
   );
 }
+

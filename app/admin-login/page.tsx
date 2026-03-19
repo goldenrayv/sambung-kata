@@ -19,7 +19,7 @@ async function adminLogin(formData: FormData) {
       maxAge: 60 * 60 * 8, // 8 hours
       path: "/",
     });
-    redirect("/admin/tokens");
+    redirect("/admin");
   }
 
   redirect("/admin-login?error=1");

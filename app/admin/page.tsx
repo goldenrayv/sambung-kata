@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Book, Key, History, Plus, Ghost } from "lucide-react";
+import { Book, Users, History, Plus, Ghost } from "lucide-react";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -47,9 +47,9 @@ export default async function AdminDashboard() {
       border: "border-neutral-500/20",
     },
     {
-      label: "Access Tokens",
+      label: "Active Users",
       value: totalTokens,
-      icon: Key,
+      icon: Users,
       color: "text-orange-400",
       bg: "bg-orange-500/10",
       border: "border-orange-500/20",
@@ -128,15 +128,15 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Tokens */}
+        {/* Recent Users */}
         <div className="bg-neutral-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
           <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
             <h3 className="text-xs font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              <Key className="w-4 h-4 text-orange-400" />
-              Recent Access Tokens
+              <Users className="w-4 h-4 text-orange-400" />
+              Recent System Users
             </h3>
             <Link 
-              href="/admin/tokens" 
+              href="/admin/users" 
               className="text-[10px] font-bold text-orange-400 hover:text-white transition-colors uppercase tracking-widest"
             >
               Manage
@@ -149,17 +149,17 @@ export default async function AdminDashboard() {
                   <div>
                     <div className="font-bold text-white">{user.username}</div>
                     <div className="text-[10px] font-medium text-white/20 uppercase tracking-tighter">
-                        Issued {new Date(user.createdAt).toLocaleDateString()}
+                        Created {new Date(user.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                   <div className="text-[10px] font-mono text-white/40 bg-white/5 px-2 py-1 rounded border border-white/10">
-                    {user.token.slice(0, 8)}...
+                    ID: {user.id.slice(0, 8)}...
                   </div>
                 </div>
               ))
             ) : (
               <div className="p-12 text-center">
-                <p className="text-sm font-medium text-white/20">No access tokens issued yet.</p>
+                <p className="text-sm font-medium text-white/20">No users found.</p>
               </div>
             )}
           </div>

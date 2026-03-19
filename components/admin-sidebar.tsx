@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Key, Book } from "lucide-react";
+import { LayoutDashboard, Users, Book } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminLogout } from "@/app/actions";
 import { LogOut, Home } from "lucide-react";
 
 const menuItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Access Tokens", href: "/admin/tokens", icon: Key },
+  { name: "User Management", href: "/admin/users", icon: Users },
   { name: "Word Repository", href: "/admin/words", icon: Book },
 ];
 

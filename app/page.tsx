@@ -1,55 +1,101 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { validateToken, getWordCount } from "@/app/actions";
+import { loginUser, getWordCount, changePassword } from "@/app/actions";
 import AuthScreen from "./_components/AuthScreen";
 import TopBar from "./_components/TopBar";
 import WordSearch from "./_components/WordSearch";
+import { toast } from "sonner";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [authError, setAuthError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<{ username: string; expiresAt: Date } | null>(null);
+  const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date } | null>(null);
   const [wordCount, setWordCount] = useState(0);
-  const [token, setToken] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   // Restore session from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("sk_token");
-    if (saved) {
-      handleAuth(saved);
+    const savedId = localStorage.getItem("sk_user_id");
+    const savedUsername = localStorage.getItem("sk_username");
+    const savedExpiry = localStorage.getItem("sk_expires_at");
+
+    if (savedId && savedUsername && savedExpiry) {
+      setUser({ 
+        id: savedId, 
+        username: savedUsername, 
+        expiresAt: new Date(savedExpiry) 
+      });
+      setIsAuthenticated(true);
+      fetchWordCount();
+      setLoading(false);
     } else {
       setIsAuthenticated(false);
       setLoading(false);
     }
   }, []);
 
-  const handleAuth = async (rawToken: string) => {
-    setLoading(true);
-    setAuthError("");
-    const result = await validateToken(rawToken);
+  const fetchWordCount = async () => {
+    const count = await getWordCount();
+    setWordCount(count);
+  };
 
-    if (result.valid) {
-      localStorage.setItem("sk_token", rawToken);
-      setToken(rawToken);
-      setUser({ username: result.username!, expiresAt: result.expiresAt! });
-      setIsAuthenticated(true);
-      setWordCount(await getWordCount());
+  const handleAuth = async (username: string, password: string) => {
+    setLoading(true);
+    const result = await loginUser(username, password);
+
+    if (result.success) {
+      if (result.mustChangePassword) {
+        setMustChangePassword(true);
+        setUser({ 
+            id: result.userId!, 
+            username: username, 
+            expiresAt: result.expiresAt! 
+        });
+        setIsAuthenticated(false); // Stay on auth screen but in "change password" mode
+      } else {
+        localStorage.setItem("sk_user_id", result.userId!);
+        localStorage.setItem("sk_username", username);
+        localStorage.setItem("sk_expires_at", result.expiresAt!.toISOString());
+        
+        setUser({ 
+            id: result.userId!, 
+            username: username, 
+            expiresAt: result.expiresAt! 
+        });
+        setIsAuthenticated(true);
+        fetchWordCount();
+      }
     } else {
       setIsAuthenticated(false);
-      setAuthError(result.error || "Invalid Access Token");
-      localStorage.removeItem("sk_token");
+      toast.error(result.error || "Authentication failed");
+    }
+    setLoading(false);
+  };
+
+  const handleChangePassword = async (current: string, newPass: string) => {
+    if (!user?.id) return;
+    setLoading(true);
+    
+    const result = await changePassword(user.id, current, newPass);
+    if (result.success) {
+      toast.success("Password updated successfully! Please login with your new password.");
+      setMustChangePassword(false);
+      setUser(null);
+      setIsAuthenticated(false);
+    } else {
+      toast.error(result.error || "Failed to change password");
     }
     setLoading(false);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("sk_token");
+    localStorage.removeItem("sk_user_id");
+    localStorage.removeItem("sk_username");
+    localStorage.removeItem("sk_expires_at");
     setIsAuthenticated(false);
-    setToken("");
     setUser(null);
+    setMustChangePassword(false);
   };
 
   // Loading spinner
@@ -61,14 +107,14 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || mustChangePassword) {
     return (
       <AuthScreen
-        tokenInput={tokenInput}
-        setTokenInput={setTokenInput}
-        authError={authError}
         loading={loading}
         onAuth={handleAuth}
+        mustChangePassword={mustChangePassword}
+        onChangePassword={handleChangePassword}
+        initialUsername={user?.username}
       />
     );
   }
@@ -86,7 +132,8 @@ export default function Home() {
         expiresAt={user!.expiresAt}
         onLogout={handleLogout}
       />
-      <WordSearch token={token} wordCount={wordCount} />
+      <WordSearch userId={user!.id} wordCount={wordCount} />
     </main>
   );
 }
+

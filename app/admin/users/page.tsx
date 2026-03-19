@@ -41,17 +41,17 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto pb-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/5">
+    <div className="space-y-8 max-w-5xl mx-auto pb-8">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/5">
         <div className="space-y-1">
-          <h1 className="text-5xl font-black tracking-tight bg-gradient-to-br from-white via-white to-white/40 text-transparent bg-clip-text font-heading">
+          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-white via-white to-white/40 text-transparent bg-clip-text font-heading">
             User Management
           </h1>
-          <p className="text-white/40 text-sm font-medium tracking-wide uppercase">Manage system access and credentials</p>
+          <p className="text-white/60 text-[10px] font-black tracking-widest uppercase">System Access & Identity Control</p>
         </div>
-        <div className="flex items-center gap-3 text-white/40 text-xs font-mono bg-white/5 px-4 py-2 rounded-full border border-white/5">
+        <div className="flex items-center gap-3 text-white/70 text-xs font-mono bg-white/5 px-4 py-2 rounded-full border border-white/5">
           <Users className="w-3.5 h-3.5 text-rose-500" />
-          <span>{users.length} Active Accounts</span>
+          <span className="font-black tracking-tight">{users.length} Active Accounts</span>
         </div>
       </header>
 
@@ -67,28 +67,28 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         </div>
       )}
 
-      <section className="space-y-8">
+      <section className="space-y-6">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
-                <UserCircle className="w-5 h-5 text-rose-500" />
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+                <UserCircle className="w-4 h-4 text-rose-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white font-heading tracking-tight">
-              Create New Account
+            <h2 className="text-lg font-bold text-white font-heading tracking-tight uppercase">
+              Provisional Enrollment
             </h2>
         </div>
 
-        <Card className="bg-neutral-900/40 border-white/5 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm">
+        <Card className="bg-neutral-900/40 border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
           <UserForm />
 
-          <div className="px-8 py-6 border-b border-white/5 bg-white/[0.02]">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+          <div className="px-6 py-4 border-b border-white/5 bg-white/[0.01]">
+            <div className="relative max-w-xs">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
               <form method="GET" className="flex gap-2">
                 <Input
                   name="q"
                   defaultValue={query}
-                  placeholder="Search by username..."
-                  className="pl-11 bg-neutral-800/40 border-white/5 rounded-xl h-11 flex-1 placeholder-white/20 text-white focus:ring-rose-500/20"
+                  placeholder="FILTER_ACCOUNTS..."
+                  className="pl-11 bg-neutral-950/40 border-white/10 rounded-lg h-10 flex-1 placeholder-white/30 text-white text-xs font-mono tracking-widest focus:ring-rose-500/20"
                 />
               </form>
             </div>
@@ -98,10 +98,10 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-white/5 bg-white/[0.01] hover:bg-transparent">
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">User Identity & Level</TableHead>
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">Auth Status</TableHead>
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">Expiraton Profile</TableHead>
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30 text-right">Actions</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">User Context</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Auth Status</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Expiration</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -124,59 +124,54 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
                     const isWarning = diffDays > 0 && diffDays <= 3;
 
                     return (
-                      <TableRow key={user.id} className="group hover:bg-white/[0.02] transition-all border-white/5">
-                        <TableCell className="px-8 py-6">
-                           <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-rose-500/20 group-hover:bg-rose-500/5 transition-all">
-                                    <span className="text-white/40 font-bold uppercase text-xs">{user.username.slice(0, 2)}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-base font-bold text-white tracking-tight">{user.username}</span>
-                                        {user.isSuperUser && (
-                                            <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter">
-                                                Super
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <span className="text-[10px] text-white/30 font-mono">ID: {user.id.slice(0, 8)}...</span>
-                                </div>
-                           </div>
+                      <TableRow
+                        key={user.id}
+                        className="group hover:bg-white/[0.01] transition-all border-white/5"
+                      >
+                        <TableCell className="px-4 py-2 border-r border-white/5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-rose-500/20 group-hover:bg-rose-500/5 transition-all">
+                              <span className="text-white/80 font-bold text-[10px]">{user.username.slice(0, 1).toUpperCase()}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-black tracking-tight text-white leading-tight">
+                                {user.username}
+                              </span>
+                              <span className="text-[8px] font-mono text-white/30 group-hover:text-white/50 transition-colors uppercase tracking-widest">
+                                ID:{user.id.slice(-6)}
+                              </span>
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell className="px-8 py-6">
-                           <div className="flex flex-col gap-1.5">
-                               {user.isFirstTimePasswordChange ? (
-                                   <Badge variant="outline" className="w-fit bg-emerald-500/10 text-emerald-400 border-emerald-500/20 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter">
-                                       Verified
-                                   </Badge>
-                               ) : (
-                                   <Badge variant="outline" className="w-fit bg-orange-500/10 text-orange-400 border-orange-500/20 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter">
-                                       Pending Change
-                                   </Badge>
-                               )}
-                           </div>
+                        <TableCell className="px-4 py-2 text-center border-r border-white/5">
+                          {user.isSuperUser ? (
+                            <Badge className="bg-rose-500/10 text-rose-300 border-rose-500/20 rounded-md px-1.5 py-0 text-[8px] font-black uppercase tracking-[0.1em] h-4 leading-none inline-flex">
+                              Super
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-white/10 text-white/70 border-white/10 rounded-md px-1.5 py-0 text-[8px] font-black uppercase tracking-[0.1em] h-4 leading-none inline-flex">
+                              Standard
+                            </Badge>
+                          )}
                         </TableCell>
-                        <TableCell className="px-8 py-6">
-                           <div className="flex items-start gap-3">
-                                <Clock className={cn(
-                                    "w-4 h-4 mt-0.5",
-                                    isExpired ? "text-red-500" : isWarning ? "text-orange-400" : "text-white/20"
-                                )} />
-                                <div className="flex flex-col">
-                                    <span className="text-white text-sm font-bold tabular-nums">
-                                        {user.expiresAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                    </span>
-                                    <span className={cn(
-                                    "text-[10px] font-bold uppercase tracking-widest",
-                                    isExpired ? "text-red-500" : isWarning ? "text-orange-400" : "text-white/40"
-                                    )}>
-                                    {isExpired ? "Access Terminated" : `${diffDays} days functional`}
-                                    </span>
-                                </div>
-                           </div>
+                        <TableCell className="px-4 py-2 border-r border-white/5">
+                            <div className="flex flex-col items-center">
+                                <span className={cn(
+                                    "text-[9px] font-mono font-black tracking-tight leading-none",
+                                    isExpired ? "text-red-400" : "text-white"
+                                )}>
+                                    {user.expiresAt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </span>
+                                <span className={cn(
+                                    "text-[8px] font-black uppercase tracking-widest mt-0.5",
+                                    isExpired ? "text-red-500/70" : "text-white/40"
+                                )}>
+                                    {isExpired ? "EXPIRED" : `${diffDays}D_LEFT`}
+                                </span>
+                            </div>
                         </TableCell>
-                        <TableCell className="px-8 py-6 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <TableCell className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end scale-75 origin-right">
                              <UserActions userId={user.id} />
                           </div>
                         </TableCell>

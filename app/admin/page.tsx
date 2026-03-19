@@ -42,9 +42,9 @@ export default async function AdminDashboard() {
       label: "Hidden Words",
       value: hiddenWordsCount,
       icon: Ghost,
-      color: "text-neutral-400",
-      bg: "bg-neutral-500/10",
-      border: "border-neutral-500/20",
+      color: "text-white/40",
+      bg: "bg-white/5",
+      border: "border-white/10",
     },
     {
       label: "Active Users",
@@ -57,34 +57,34 @@ export default async function AdminDashboard() {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-black bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text italic tracking-tighter">
-          ADMIN DASHBOARD
+        <h1 className="text-2xl font-black bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text tracking-tighter uppercase">
+          Dashboard
         </h1>
-        <div className="text-[10px] font-bold text-white/40 tracking-widest uppercase bg-white/5 px-3 py-1 rounded-full border border-white/10">
-          Live Repository Metrics
+        <div className="text-[9px] font-black text-white/50 tracking-[0.2em] uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
+          Live Repository
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className={`p-6 rounded-2xl bg-neutral-900 border ${stat.border} relative overflow-hidden group hover:scale-[1.02] transition-all duration-300`}
+            className={`p-4 rounded-xl bg-neutral-950 border ${stat.border} relative overflow-hidden group hover:bg-white/[0.01] transition-all duration-300`}
           >
-            <div className={`absolute top-0 right-0 p-4 ${stat.color} opacity-10 group-hover:opacity-20 transition-opacity`}>
-              <stat.icon className="w-16 h-16 -mr-4 -mt-4 rotate-12" />
+            <div className={`absolute top-0 right-0 p-2 ${stat.color} opacity-5 group-hover:opacity-10 transition-opacity`}>
+              <stat.icon className="w-12 h-12 -mr-2 -mt-2 rotate-12" />
             </div>
             <div className="relative">
-              <div className={`w-10 h-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4`}>
-                <stat.icon className="w-5 h-5" />
+              <div className={`w-8 h-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-3 shadow-inner`}>
+                <stat.icon className="w-4 h-4" />
               </div>
-              <div className="text-3xl font-black text-white mb-1">
+              <div className="text-xl font-black text-white mb-0.5 tracking-tight">
                 {stat.value.toLocaleString()}
               </div>
-              <div className="text-xs font-bold text-white/40 uppercase tracking-widest leading-none">
+              <div className="text-[9px] font-black text-white uppercase tracking-[0.15em] leading-none">
                 {stat.label}
               </div>
             </div>
@@ -92,31 +92,31 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Recent Words */}
-        <div className="bg-neutral-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-            <h3 className="text-xs font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              <History className="w-4 h-4 text-rose-400" />
-              Recent Word Submissions
+        <div className="bg-neutral-950 border border-white/5 rounded-xl overflow-hidden shadow-2xl">
+          <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+            <h3 className="text-[9px] font-black text-white tracking-[0.2em] uppercase flex items-center gap-2">
+              <History className="w-3.5 h-3.5 text-rose-500" />
+              Word Intake
             </h3>
             <Link 
               href="/admin/words" 
-              className="text-[10px] font-bold text-rose-400 hover:text-white transition-colors uppercase tracking-widest"
+              className="text-[9px] font-black text-rose-400 hover:text-rose-300 transition-colors uppercase tracking-widest"
             >
-              View All
+              Logs
             </Link>
           </div>
           <div className="divide-y divide-white/5">
             {recentWords.length > 0 ? (
               recentWords.map((word) => (
-                <div key={word.id} className="px-6 py-4 flex items-center justify-between group hover:bg-white/[0.02] transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${word.isActive ? 'bg-emerald-500' : 'bg-neutral-500'}`} />
-                    <span className="font-bold text-white">{word.word}</span>
+                <div key={word.id} className="px-4 py-2.5 flex items-center justify-between group hover:bg-white/[0.01] transition-colors">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${word.isActive ? 'bg-emerald-500' : 'bg-white/20'}`} />
+                    <span className="font-bold text-white text-xs tracking-wide uppercase">{word.word}</span>
                   </div>
-                  <span className="text-[10px] font-medium text-white/20 uppercase">
-                    {word.isActive ? 'Active' : 'Hidden'}
+                  <span className="text-[9px] font-black text-white uppercase tracking-tighter">
+                    {word.isActive ? 'Live' : 'Hidden'}
                   </span>
                 </div>
               ))
@@ -129,31 +129,31 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Recent Users */}
-        <div className="bg-neutral-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-            <h3 className="text-xs font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              <Users className="w-4 h-4 text-orange-400" />
-              Recent System Users
+        <div className="bg-neutral-950 border border-white/5 rounded-xl overflow-hidden shadow-2xl">
+          <div className="px-4 py-2.5 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+            <h3 className="text-[9px] font-black text-white tracking-[0.2em] uppercase flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-orange-500" />
+              Access Log
             </h3>
             <Link 
               href="/admin/users" 
-              className="text-[10px] font-bold text-orange-400 hover:text-white transition-colors uppercase tracking-widest"
+              className="text-[9px] font-black text-orange-400 hover:text-orange-300 transition-colors uppercase tracking-widest"
             >
-              Manage
+              Access
             </Link>
           </div>
           <div className="divide-y divide-white/5">
             {recentTokens.length > 0 ? (
               recentTokens.map((user) => (
-                <div key={user.id} className="px-6 py-4 flex items-center justify-between group hover:bg-white/[0.02] transition-colors">
+                <div key={user.id} className="px-4 py-2.5 flex items-center justify-between group hover:bg-white/[0.01] transition-colors">
                   <div>
-                    <div className="font-bold text-white">{user.username}</div>
-                    <div className="text-[10px] font-medium text-white/20 uppercase tracking-tighter">
-                        Created {new Date(user.createdAt).toLocaleDateString()}
+                    <div className="font-bold text-white text-xs">{user.username}</div>
+                    <div className="text-[9px] font-black text-white uppercase tracking-tighter opacity-60">
+                        {new Date(user.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono text-white/40 bg-white/5 px-2 py-1 rounded border border-white/10">
-                    ID: {user.id.slice(0, 8)}...
+                  <div className="text-[9px] font-mono text-white bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+                    {user.id.slice(0, 4)}
                   </div>
                 </div>
               ))

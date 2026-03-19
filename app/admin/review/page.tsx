@@ -49,19 +49,19 @@ export default async function AdminReviewPage({
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto pb-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/5">
+    <div className="space-y-8 max-w-5xl mx-auto pb-8">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/5">
         <div className="space-y-1">
-          <h1 className="text-5xl font-black tracking-tight bg-gradient-to-br from-white via-white to-white/40 text-transparent bg-clip-text font-heading">
+          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-white via-white to-white/40 text-transparent bg-clip-text font-heading">
             Quality Control
           </h1>
-          <p className="text-white/40 text-sm font-medium tracking-wide uppercase">
-            {totalCount.toLocaleString()} words awaiting system verification
+          <p className="text-white/60 text-[10px] font-black tracking-widest uppercase italic">
+            {totalCount.toLocaleString()} Pending Verification Segments
           </p>
         </div>
-        <div className="flex items-center gap-3 text-white/40 text-xs font-mono bg-white/5 px-4 py-2 rounded-full border border-white/5">
+        <div className="flex items-center gap-3 text-white/70 text-xs font-mono bg-white/5 px-4 py-2 rounded-full border border-white/5">
           <ShieldCheck className="w-3.5 h-3.5 text-rose-500" />
-          <span>Restricted Protocol Engagement</span>
+          <span className="font-black tracking-tight italic opacity-80">Restricted Protocol Engagement</span>
         </div>
       </header>
 
@@ -77,26 +77,26 @@ export default async function AdminReviewPage({
         </div>
       )}
 
-      <section className="space-y-8">
+      <section className="space-y-6">
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
-                <ClipboardCheck className="w-5 h-5 text-rose-500" />
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
+                <ClipboardCheck className="w-4 h-4 text-rose-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white font-heading tracking-tight">
+            <h2 className="text-lg font-bold text-white font-heading tracking-tight uppercase">
               Review Queue
             </h2>
         </div>
 
-        <Card className="bg-neutral-900/40 border-white/5 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-sm">
+        <Card className="bg-neutral-950 border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
           <AdminReviewManager />
 
           <CardContent className="p-0 overflow-x-auto">
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-white/5 bg-white/[0.01] hover:bg-transparent">
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30 w-[60%]">Term Candidate</TableHead>
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30">Current Status</TableHead>
-                  <TableHead className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-white/30 text-right">Review Action</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 w-[60%] font-mono">Candidate Segment</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Status</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 text-right">Moderation</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -106,28 +106,28 @@ export default async function AdminReviewPage({
                     return (
                       <TableRow
                         key={review.id}
-                        className="group hover:bg-white/[0.02] transition-all border-white/5"
+                        className="group hover:bg-white/[0.01] transition-all border-white/5"
                       >
-                        <TableCell className="px-8 py-4">
-                           <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-rose-500/20 group-hover:bg-rose-500/5 transition-all">
+                        <TableCell className="px-6 py-3">
+                           <div className="flex items-center gap-3">
+                                <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-rose-500/20 group-hover:bg-rose-500/5 transition-all">
                                     <span className="text-white/40 font-bold uppercase text-[9px]">{review.word.slice(0, 1)}</span>
                                 </div>
-                                <span className="text-sm font-bold tracking-widest text-white uppercase font-mono">
+                                <span className="text-xs font-black tracking-widest text-white uppercase font-mono">
                                     {review.word}
                                 </span>
                            </div>
                         </TableCell>
-                        <TableCell className="px-8 py-4">
+                        <TableCell className="px-6 py-3">
                             <Badge
                               variant="outline"
-                              className="bg-neutral-800 text-white/60 border-white/10 rounded-lg px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter"
+                              className="bg-white/10 text-white/70 border-white/10 rounded-md px-1.5 py-0 text-[10px] font-black uppercase tracking-tighter leading-none h-4"
                             >
-                              Verification Required
+                              Verification
                             </Badge>
                         </TableCell>
-                        <TableCell className="px-8 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <TableCell className="px-6 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                              <form action={async () => {
                                 "use server";
                                 await processWordReview(review.id, 'accept');
@@ -135,11 +135,9 @@ export default async function AdminReviewPage({
                                 <Button
                                   type="submit"
                                   variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-3 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all text-emerald-400/60 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20"
+                                  className="h-7 w-7 p-0 rounded-lg text-emerald-400/60 hover:text-emerald-400 hover:bg-emerald-500/10"
                                 >
-                                  <Check className="w-3 h-3 mr-1.5" />
-                                  Accept
+                                  <Check className="w-3.5 h-3.5" />
                                 </Button>
                              </form>
                              <form action={async () => {
@@ -149,11 +147,9 @@ export default async function AdminReviewPage({
                                 <Button
                                   type="submit"
                                   variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-3 rounded-lg font-bold text-[9px] uppercase tracking-wider transition-all text-red-400/60 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20"
+                                  className="h-7 w-7 p-0 rounded-lg text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
                                 >
-                                  <X className="w-3 h-3 mr-1.5" />
-                                  Reject
+                                  <X className="w-3.5 h-3.5" />
                                 </Button>
                              </form>
                           </div>
@@ -174,41 +170,41 @@ export default async function AdminReviewPage({
               </TableBody>
             </Table>
 
-            <div className="flex items-center justify-between px-8 py-6 bg-white/[0.02] border-t border-white/5">
+            <div className="flex items-center justify-between px-6 py-4 bg-white/[0.01] border-t border-white/5">
               <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 leading-none">Record Domain</span>
-                  <div className="h-4 w-[1px] bg-white/10" />
-                  <span className="text-xs font-mono font-bold text-white leading-none">
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 leading-none">Record Domain</span>
+                  <div className="h-3 w-[1px] bg-white/10" />
+                  <span className="text-[11px] font-mono font-black text-white/80 leading-none">
                     {totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)}
                   </span>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-white/20 leading-none">of</span>
-                  <span className="text-xs font-mono font-bold text-rose-500 leading-none">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-white/30 leading-none px-1">of</span>
+                  <span className="text-[11px] font-mono font-black text-rose-500 leading-none">
                     {totalCount.toLocaleString()}
                   </span>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <Link 
                     href={page > 1 ? `/admin/review?page=${page - 1}` : "#"}
-                    className={cn(page <= 1 && "pointer-events-none opacity-20")}
+                    className={cn(page <= 1 && "pointer-events-none opacity-10")}
                 >
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-xl border border-white/5">
-                      <ChevronLeft className="w-5 h-5" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/5 rounded-lg border border-white/5">
+                      <ChevronLeft className="w-3.5 h-3.5" />
                     </Button>
                 </Link>
                 
-                <div className="flex items-center px-4 bg-white/5 rounded-xl border border-white/5 text-[10px] font-black font-mono">
+                <div className="flex items-center px-3 bg-white/5 rounded-lg border border-white/5 text-[9px] font-black font-mono">
                     <span className="text-white">{page}</span>
-                    <span className="mx-2 text-white/20">/</span>
-                    <span className="text-white/40">{totalPages}</span>
+                    <span className="mx-1.5 text-white/30">/</span>
+                    <span className="text-white/60">{totalPages}</span>
                 </div>
 
                 <Link 
                     href={page < totalPages ? `/admin/review?page=${page + 1}` : "#"}
-                    className={cn(page >= totalPages && "pointer-events-none opacity-20")}
+                    className={cn(page >= totalPages && "pointer-events-none opacity-10")}
                 >
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-white hover:bg-white/10 rounded-xl border border-white/5">
-                      <ChevronRight className="w-5 h-5" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/5 rounded-lg border border-white/5">
+                      <ChevronRight className="w-3.5 h-3.5" />
                     </Button>
                 </Link>
               </div>

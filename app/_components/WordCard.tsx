@@ -37,8 +37,8 @@ export default function WordCard({ word, search = "", searchMode = "prefix", isS
     >
       <span
         className={`text-[11px] tracking-widest transition-colors uppercase ${cue 
-          ? cue === "Prefix Match" ? "text-rose-100 font-bold" : "text-orange-100 font-bold"
-          : "text-white/90"
+          ? cue === "Prefix Match" ? "text-rose-100 font-black" : "text-orange-100 font-black"
+          : "text-white font-bold"
           }`}
       >
         {word.toUpperCase()}

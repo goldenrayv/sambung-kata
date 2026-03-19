@@ -18,24 +18,24 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-neutral-900 border-r border-white/10 flex flex-col h-screen sticky top-0 shrink-0">
-      <div className="p-6 border-b border-white/10">
-        <h2 className="text-xl font-bold font-heading bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text">
-          Admin Portal
+    <aside className="w-60 bg-neutral-950 border-r border-white/5 flex flex-col h-screen sticky top-0 shrink-0">
+      <div className="px-6 py-5 border-b border-white/5">
+        <h2 className="text-lg font-black uppercase tracking-widest bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text font-heading">
+          Admin
         </h2>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 px-3 py-4 space-y-1">
         {menuItems.map((item) => (
           <Link
             key={item.name}
             href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                "flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-bold tracking-tight transition-all duration-200",
                 // Exact match for dashboard, startswith for others
                 (item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href))
-                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                  : "text-white hover:bg-white/5"
+                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/10 shadow-[0_0_15px_rgba(244,63,94,0.05)]"
+                  : "text-white/70 hover:text-white hover:bg-white/5 border border-transparent"
               )}
           >
             <item.icon className="w-4 h-4" />
@@ -44,24 +44,24 @@ export function AdminSidebar() {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-white/10 space-y-1">
+      <div className="p-3 border-t border-white/5 space-y-1 bg-white/[0.01]">
         {/* Back to the user-facing app */}
         <Link
           href="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:bg-white/5 transition-all"
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-bold text-white/70 hover:text-white hover:bg-white/5 transition-all"
         >
           <Home className="w-4 h-4" />
-          Back to App
+          App Interface
         </Link>
-
+ 
         {/* Admin logout — clears the session cookie */}
         <form action={adminLogout}>
           <button
             type="submit"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:text-red-400 hover:bg-red-400/5 transition-all"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-[12px] font-bold text-white/70 hover:text-red-400 hover:bg-red-400/5 transition-all"
           >
             <LogOut className="w-4 h-4" />
-            Admin Logout
+            Logout
           </button>
         </form>
       </div>

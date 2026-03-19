@@ -228,7 +228,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search across repository..."
-                className="flex-1 bg-transparent text-xl font-medium text-white placeholder-white/20 border-none outline-none ring-0 shadow-none p-0 h-auto"
+                className="flex-1 bg-transparent text-xl font-bold text-white placeholder-white/50 border-none outline-none ring-0 shadow-none p-0 h-auto italic"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
@@ -243,7 +243,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                     <X className="w-4 h-4" />
                   </button>
                 )}
-                <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/10 bg-white/5 text-[10px] font-medium text-white/20 select-none">
+                <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/20 bg-white/5 text-[10px] font-black text-white/50 select-none">
                   <Command className="w-2.5 h-2.5" />
                   <span>K</span>
                 </div>
@@ -268,7 +268,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
               <button
                 key={s}
                 onClick={() => setSearch(s)}
-                className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/40 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
+                className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-white/70 hover:bg-orange-500/10 hover:border-orange-500/30 hover:text-orange-400 transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
               >
                 -{s}
               </button>
@@ -324,7 +324,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                           const el = document.getElementById(`prefix-group-Other`);
                           el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                       }}
-                      className="flex items-center justify-center px-2 h-6 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
+                      className="flex items-center justify-center px-2 h-6 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/80 hover:bg-white/10 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
                     >
                       Other
                     </button>
@@ -333,9 +333,9 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
               )}
             </div>
             
-            <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
-              <span className="opacity-40 whitespace-nowrap">Starts with</span>
-              <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">&quot;{search}&quot;</span>
+            <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
+              <span className="opacity-80 whitespace-nowrap italic">Starts with</span>
+              <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
             </div>
           </div>
 
@@ -367,10 +367,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
               <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
                 <div className="inline-flex flex-col items-center">
                   <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                    <X className="w-6 h-6 text-rose-500 opacity-50" />
+                    <X className="w-6 h-6 text-rose-500 opacity-80" />
                   </div>
-                  <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No prefix results</p>
-                  <p className="text-[10px] text-white/20 mt-1">Try a different letter combination</p>
+                  <p className="text-sm font-black text-white tracking-widest uppercase opacity-80">No prefix results</p>
+                  <p className="text-[10px] text-white/60 mt-1 font-bold italic">Try a different letter combination</p>
                 </div>
               </div>
             ) : null}
@@ -425,9 +425,9 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                 )}
               </div>
 
-              <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
-                <span className="opacity-40 whitespace-nowrap">Ends with</span>
-                <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20">&quot;{search}&quot;</span>
+              <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
+                <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
+                <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
               </div>
             </div>
 
@@ -458,10 +458,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                   <div className="py-20 text-center col-span-full animate-in fade-in zoom-in duration-500">
                     <div className="inline-flex flex-col items-center">
                       <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4 border border-white/10">
-                        <X className="w-6 h-6 text-orange-500 opacity-50" />
+                        <X className="w-6 h-6 text-orange-500 opacity-80" />
                       </div>
-                      <p className="text-sm font-bold text-white tracking-widest uppercase opacity-40">No suffix results</p>
-                      <p className="text-[10px] text-white/20 mt-1">Try the Magic Suffixes above</p>
+                      <p className="text-sm font-black text-white tracking-widest uppercase opacity-80">No suffix results</p>
+                      <p className="text-[10px] text-white/60 mt-1 font-bold italic">Try the Magic Suffixes above</p>
                     </div>
                   </div>
                 ) : null
@@ -495,10 +495,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
                       </div>
                     ))
                   ) : (
-                    <div className="py-20 text-center opacity-40">
-                      <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                      <p className="text-sm font-bold uppercase tracking-widest">Queue Clear</p>
-                      <p className="text-[10px] mt-1">No pending words for review</p>
+                    <div className="py-20 text-center opacity-80">
+                      <ClipboardCheck className="w-12 h-12 mx-auto mb-4 opacity-40" />
+                      <p className="text-sm font-black uppercase tracking-widest italic">Queue Clear</p>
+                      <p className="text-[10px] mt-1 font-bold text-white/60">No pending words for review</p>
                     </div>
                   )}
                 </div>
@@ -509,10 +509,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
       </div>
 
       {!search && (
-        <div className="flex flex-col items-center justify-center py-32 text-white">
-          <BookOpen className="w-16 h-16 mb-4 opacity-20" />
-          <p className="text-lg font-light tracking-wide">
-            Search {wordCount.toLocaleString()} active Indonesian words
+        <div className="flex flex-col items-center justify-center py-32 text-white/80">
+          <BookOpen className="w-16 h-16 mb-4 opacity-40" />
+          <p className="text-lg font-black tracking-widest uppercase italic font-mono">
+            Search {wordCount.toLocaleString()} active tokens
           </p>
         </div>
       )}

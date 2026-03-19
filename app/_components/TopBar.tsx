@@ -21,9 +21,9 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
   const isWarning = diffDays > 0 && diffDays <= 3;
 
   return (
-    <div className="sticky top-0 z-30 w-full max-w-full flex items-center justify-between mb-8 animate-in fade-in duration-500 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 p-4 rounded-none -mx-4 md:-mx-8 px-4 md:px-8">
-      <div className="flex items-center gap-3">
-        <h1 className="text-xl font-bold font-heading bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text italic tracking-tighter">
+    <div className="sticky top-0 z-30 w-full max-w-full flex items-center justify-between mb-4 animate-in fade-in duration-500 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 p-2 rounded-none -mx-4 md:-mx-8 px-4 md:px-8">
+      <div className="flex items-center gap-2">
+        <h1 className="text-lg font-bold font-heading bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text italic tracking-tighter">
           Sambung Kata
         </h1>
       </div>
@@ -76,14 +76,14 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
           </div>
         )}
 
-        <div className="flex items-center gap-2 pr-4 border-r border-white/10">
+        <div className="flex items-center gap-1.5 pr-2 border-r border-white/10">
           <button 
             onClick={() => setShowTips(!showTips)}
-            className="group flex items-center gap-1.5 mr-2"
+            className="group flex items-center gap-1.5 mr-1"
           >
             <Badge
               variant="outline"
-              className={`bg-rose-500/5 text-[10px] uppercase tracking-wider px-2 py-0.5 whitespace-nowrap cursor-pointer transition-all duration-300 ${
+              className={`bg-rose-500/5 text-[9px] uppercase tracking-wider px-1.5 py-0 whitespace-nowrap cursor-pointer transition-all duration-300 h-4 leading-none ${
                 showTips ? 'text-white border-white/40 ring-1 ring-white/20' : 'text-rose-400 border-rose-500/20 group-hover:border-rose-400'
               }`}
             >
@@ -91,23 +91,23 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
             </Badge>
           </button>
           
-          <div className="flex flex-col items-end mr-2">
-            <span className="text-[10px] font-bold uppercase tracking-tighter flex items-center gap-1">
-              <span className={isWarning ? "text-orange-400 animate-pulse" : "text-white/40"}>
-                {diffDays}d remaining
+          <div className="flex flex-col items-end mr-1">
+            <span className="text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1">
+              <span className={isWarning ? "text-orange-400 animate-pulse" : "text-white/60"}>
+                {diffDays}d
               </span>
             </span>
           </div>
 
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center font-bold text-white text-xs shadow-lg">
+          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center font-bold text-white text-[10px] shadow-lg">
             {username?.[0]?.toUpperCase()}
           </div>
-          <div className="flex flex-col items-start mr-2">
-            <span className="text-xs font-medium text-white">{username}</span>
+          <div className="flex flex-col items-start mr-1">
+            <span className="text-[11px] font-bold text-white leading-none">{username}</span>
             {isSuperUser ? (
-              <span className="text-[9px] font-black text-rose-400 uppercase tracking-[0.2em] leading-none mt-0.5">Super User</span>
+              <span className="text-[8px] font-black text-rose-400 uppercase tracking-[0.1em] leading-none mt-0.5">Super</span>
             ) : (
-              <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] leading-none mt-0.5">User</span>
+              <span className="text-[8px] font-black text-white/50 uppercase tracking-[0.1em] leading-none mt-0.5">User</span>
             )}
           </div>
         </div>
@@ -116,9 +116,9 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
           variant="ghost"
           size="sm"
           onClick={onLogout}
-          className="text-white hover:text-rose-400 transition-all text-xs h-8 px-2"
+          className="text-white/70 hover:text-rose-400 transition-all text-[10px] h-7 px-2 font-black uppercase tracking-widest"
         >
-          <LogOut className="w-3.5 h-3.5 mr-1.5" />
+          <LogOut className="w-3 h-3 mr-1" />
           Logout
         </Button>
       </div>

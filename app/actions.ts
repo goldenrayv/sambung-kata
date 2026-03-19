@@ -312,3 +312,45 @@ export async function adminLogout() {
   cookieStore.delete("admin_session");
   redirect("/admin-login");
 }
+
+// ---------------------------------------------------------------------------
+// Export — admin
+// ---------------------------------------------------------------------------
+export async function exportAllData() {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      isSuperUser: true,
+      expiresAt: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const words = await prisma.word.findMany({
+    select: {
+      id: true,
+      word: true,
+      isActive: true,
+      createdAt: true,
+    },
+    orderBy: { word: 'asc' }
+  });
+
+  const wordReviews = await prisma.wordReview.findMany({
+    select: {
+      id: true,
+      word: true,
+      status: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  return { 
+    users: users.map((u: any) => ({ ...u, expiresAt: u.expiresAt.toISOString(), createdAt: u.createdAt.toISOString() })), 
+    words: words.map((w: any) => ({ ...w, createdAt: w.createdAt.toISOString() })), 
+    reviews: wordReviews.map((r: any) => ({ ...r, createdAt: r.createdAt.toISOString() }))
+  };
+}

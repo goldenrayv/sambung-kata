@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { Book, Users, History, Plus, Ghost } from "lucide-react";
+import { Book, Users, History, Plus, Ghost, Download } from "lucide-react";
 import Link from "next/link";
+import AdminExportButton from "./AdminExportButton";
 
 export const dynamic = "force-dynamic";
 
@@ -62,8 +63,11 @@ export default async function AdminDashboard() {
         <h1 className="text-2xl font-black bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text tracking-tighter uppercase">
           Dashboard
         </h1>
-        <div className="text-[9px] font-black text-white/50 tracking-[0.2em] uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
-          Live Repository
+        <div className="flex items-center gap-3">
+          <AdminExportButton />
+          <div className="text-[9px] font-black text-white/50 tracking-[0.2em] uppercase bg-white/5 px-2 py-0.5 rounded border border-white/5">
+            Live Repository
+          </div>
         </div>
       </div>
 

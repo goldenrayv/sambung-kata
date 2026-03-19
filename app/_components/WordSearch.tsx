@@ -130,7 +130,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
   const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
   const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
   const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
-  const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
+  const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI", "IC"];
 
   // Strategic Grouping for Prefix Results: Group by their "Deadliest Ending"
   const groupedPrefix = prefixResults.reduce((acc, wordObj: any) => {

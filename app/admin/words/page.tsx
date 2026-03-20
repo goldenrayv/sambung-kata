@@ -1,4 +1,4 @@
-import { getAllWordsAdmin, getAllWordCountAdmin, deleteWord } from "@/app/actions";
+import { getAllWordsAdmin, getAllWordCountAdmin, deleteWord, toggleWordVerification } from "@/app/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +12,9 @@ import {
   Database,
   Search,
   Trash2,
-  Zap
+  Zap,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 import AdminWordManager from "./AdminWordManager";
@@ -94,7 +96,8 @@ export default async function AdminWordsPage({
             <Table className="w-full">
               <TableHeader>
                 <TableRow className="border-b border-white/5 bg-white/[0.01] hover:bg-transparent">
-                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 w-[60%] font-mono">Notation Segment</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 w-[50%] font-mono">Notation Segment</TableHead>
+                  <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Verification</TableHead>
                   <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Lifecycle</TableHead>
                   <TableHead className="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-white/50 text-right">Operation</TableHead>
                 </TableRow>
@@ -112,10 +115,39 @@ export default async function AdminWordsPage({
                                 <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 group-hover:border-orange-500/20 group-hover:bg-orange-500/5 transition-all">
                                     <span className="text-white/80 font-bold uppercase text-[9px]">{word.word.slice(0, 1)}</span>
                                 </div>
-                                <span className="text-xs font-black tracking-widest text-white uppercase font-mono">
+                                <span className={cn(
+                                  "text-xs font-black tracking-widest uppercase font-mono transition-colors",
+                                  word.isVerified === "verified" ? "text-emerald-400" : "text-white"
+                                )}>
                                     {word.word}
                                 </span>
                            </div>
+                        </TableCell>
+                        <TableCell className="px-6 py-3">
+                          <form action={async () => {
+                            'use server';
+                            await toggleWordVerification(word.id, word.isVerified);
+                          }}>
+                            {word.isVerified === "verified" ? (
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                className="h-6 px-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md hover:bg-emerald-500/20 transition-all group/btn"
+                              >
+                                <ShieldCheck className="w-3 h-3 mr-1.5" />
+                                <span className="text-[9px] font-black tracking-widest uppercase">Verified</span>
+                              </Button>
+                            ) : (
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                className="h-6 px-2 bg-white/5 text-white/40 border border-white/10 rounded-md hover:bg-white/10 transition-all hover:text-white group/btn"
+                              >
+                                <ShieldAlert className="w-3 h-3 mr-1.5" />
+                                <span className="text-[9px] font-black tracking-widest uppercase">Unverified</span>
+                              </Button>
+                            )}
+                          </form>
                         </TableCell>
                         <TableCell className="px-6 py-3">
                           {word.isActive ? (

@@ -13,7 +13,12 @@ import { revalidatePath } from "next/cache";
 // Words — public
 // ---------------------------------------------------------------------------
 export async function getWordCount(): Promise<number> {
-  return prisma.word.count({ where: { isActive: true } });
+  return prisma.word.count({ 
+    where: { 
+      isActive: true,
+      isVerified: { not: "rejected" }
+    } 
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -36,12 +41,15 @@ export async function addWord(formData: FormData): Promise<void> {
 
 export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, search?: string) {
   return prisma.word.findMany({
-    where: search ? {
-      word: {
-        contains: search,
-        mode: 'insensitive'
-      }
-    } : {},
+    where: {
+      isVerified: { not: "rejected" },
+      ...(search ? {
+        word: {
+          contains: search,
+          mode: 'insensitive'
+        }
+      } : {})
+    },
     orderBy: { word: "asc" },
     skip: (page - 1) * pageSize,
     take: pageSize,
@@ -50,12 +58,15 @@ export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, 
 
 export async function getAllWordCountAdmin(search?: string): Promise<number> {
   return prisma.word.count({
-    where: search ? {
-      word: {
-        contains: search,
-        mode: 'insensitive'
-      }
-    } : {}
+    where: {
+      isVerified: { not: "rejected" },
+      ...(search ? {
+        word: {
+          contains: search,
+          mode: 'insensitive'
+        }
+      } : {})
+    }
   });
 }
 
@@ -116,8 +127,10 @@ export async function toggleWordStatus(id: string, currentlyActive: boolean) {
 
 export async function deleteWord(id: string) {
   try {
-    await prisma.word.delete({
+    // Soft delete: turn isVerified to rejected
+    await prisma.word.update({
       where: { id },
+      data: { isVerified: "rejected" }
     });
     revalidatePath("/admin/words");
     return { success: true };
@@ -127,81 +140,50 @@ export async function deleteWord(id: string) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Word Review — admin
-// ---------------------------------------------------------------------------
-
-export async function getWordReviewCount(): Promise<number> {
-  return prisma.wordReview.count({ where: { status: "new" } });
-}
-
-export async function getWordReviews(page: number = 1, pageSize: number = 50, search?: string) {
-  return prisma.wordReview.findMany({
-    where: { 
-      status: "new",
-      ...(search ? { word: { startsWith: search, mode: 'insensitive' } } : {})
-    },
-    orderBy: { createdAt: "desc" },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
+export async function toggleWordVerification(id: string, currentStatus: string) {
+  const newStatus = currentStatus === "verified" ? "unverified" : "verified";
+  await prisma.word.update({
+    where: { id },
+    data: { isVerified: newStatus },
   });
+  revalidatePath("/admin/words");
+  return { success: true };
 }
 
-export async function insertBulkWordReviews(words: string[]) {
-  if (words.length === 0) return { success: true };
+// ---------------------------------------------------------------------------
+// Word Curation — admin
+// ---------------------------------------------------------------------------
+
+export async function getAdminWordStats() {
+  const [verified, unverified, rejected] = await Promise.all([
+    prisma.word.count({ where: { isVerified: "verified" } }),
+    prisma.word.count({ where: { isVerified: "unverified" } }),
+    prisma.word.count({ where: { isVerified: "rejected" } }),
+  ]);
+  
+  return { verified, unverified, rejected };
+}
+
+export async function bulkVerifyWords(words: string[]) {
+  if (words.length === 0) return { success: true, count: 0 };
   
   try {
-    const uppercaseWords = Array.from(new Set(words.map(word => word.toUpperCase().trim()).filter(Boolean)));
+    const cleanWords = Array.from(new Set(words.map(w => w.toLowerCase().trim()).filter(Boolean)));
     
-    // Batch processing
-    const BATCH_SIZE = 1000;
-    for (let i = 0; i < uppercaseWords.length; i += BATCH_SIZE) {
-      const batch = uppercaseWords.slice(i, i + BATCH_SIZE);
-      await prisma.wordReview.createMany({
-        data: batch.map(word => ({ 
-          word,
-        })),
-      });
-    }
-    
-    revalidatePath("/admin/review");
-    return { success: true };
-  } catch (error: any) {
-    console.error("Bulk review insert failed:", error);
-    return { 
-      success: false, 
-      error: error.message || "Failed to insert words for review." 
-    };
-  }
-}
-
-export async function processWordReview(id: string, action: 'accept' | 'reject') {
-  try {
-    const reviewItem = await prisma.wordReview.findUnique({ where: { id } });
-    if (!reviewItem) return { success: false, error: "Review item not found" };
-
-    if (action === 'accept') {
-      // Check if word already exists in Word table to avoid unique constraint error
-      const existing = await prisma.word.findUnique({ where: { word: reviewItem.word } });
-      if (!existing) {
-        await prisma.word.create({ data: { word: reviewItem.word } });
+    const result = await prisma.word.updateMany({
+      where: {
+        word: { in: cleanWords }
+      },
+      data: {
+        isVerified: "verified"
       }
-      
-      await prisma.wordReview.update({
-        where: { id },
-        data: { status: "accepted" }
-      });
-    } else {
-      await prisma.wordReview.update({
-        where: { id },
-        data: { status: "rejected" }
-      });
-    }
-
-    revalidatePath("/admin/review");
+    });
+    
     revalidatePath("/admin/words");
-    return { success: true };
+    revalidatePath("/admin");
+    return { success: true, count: result.count };
   } catch (error: any) {
+    console.error("Bulk verification failed:", error);
     return { success: false, error: error.message };
   }
 }
@@ -332,25 +314,16 @@ export async function exportAllData() {
     select: {
       id: true,
       word: true,
+      isVerified: true,
       isActive: true,
       createdAt: true,
     },
     orderBy: { word: 'asc' }
   });
 
-  const wordReviews = await prisma.wordReview.findMany({
-    select: {
-      id: true,
-      word: true,
-      status: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' }
-  });
 
   return { 
     users: users.map((u: any) => ({ ...u, expiresAt: u.expiresAt.toISOString(), createdAt: u.createdAt.toISOString() })), 
     words: words.map((w: any) => ({ ...w, createdAt: w.createdAt.toISOString() })), 
-    reviews: wordReviews.map((r: any) => ({ ...r, createdAt: r.createdAt.toISOString() }))
   };
 }

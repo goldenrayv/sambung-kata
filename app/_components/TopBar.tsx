@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Info, BookOpen, Sparkles, AlertCircle, X } from "lucide-react";
+import { LogOut, Info, BookOpen, Sparkles, AlertCircle, X, ArrowUpRight, ShieldCheck, BadgeCheck } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,28 +45,38 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[10px] font-bold text-rose-400 uppercase tracking-tighter">
-                  <BookOpen className="w-3 h-3" />
-                  Real-time Search
+                  <ArrowUpRight className="w-3 h-3" />
+                  Kill-Zone Offense
                 </div>
                 <p className="text-[11px] leading-relaxed text-white/60">
-                  Master the dictionary. Type any letter combination to find prefix and suffix matches in real-time. Use it to verify existence and explore responses.
+                  Target "Dead-End" suffixes like <span className="text-white font-mono">OA, EZ, KS, TT</span> or <span className="text-white font-mono">HIH</span>. These have high statistical win-rates because few valid words begin with these combinations.
                 </p>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[10px] font-bold text-orange-400 uppercase tracking-tighter">
-                  <Sparkles className="w-3 h-3" />
-                  Survival Analytics
+                  <ShieldCheck className="w-3 h-3" />
+                  Precision Defense
                 </div>
                 <p className="text-[11px] leading-relaxed text-white/60">
-                  Strategize with win-rates. Magic Suffixes show endings that are statistically harder to answer, meaning they have many words but few follow-up responses.
+                  Toggle the <span className="text-white font-mono">Suffix</span> grid to find words that counter your opponent’s move. If a response shows 0 suffix results, it’s a trap—you’ve essentially cleared the board.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-400 uppercase tracking-tighter">
+                  <BadgeCheck className="w-3 h-3" />
+                  Verified Tokens
+                </div>
+                <p className="text-[11px] leading-relaxed text-white/60">
+                  Look for <span className="text-emerald-400 font-black italic">Emerald</span> highlighted cards. These are curated, professional-grade words guaranteed to be valid in competitive play.
                 </p>
               </div>
 
               <div className="pt-4 border-t border-white/5">
                 <div className="flex items-start gap-2 text-[9px] font-medium text-white/30 italic leading-snug">
                   <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                  <span>Disclaimer: Our library is extensive but may not contain every slang or regional variant. Proceed with tactical caution.</span>
+                  <span>Disclaimer: Our library is extensive but focus on Verified tokens for the highest competitive integrity.</span>
                 </div>
               </div>
             </div>

@@ -117,7 +117,7 @@ export default function AdminWordManager() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Filter key terms..."
-                  className="w-full pl-10 bg-neutral-900/40 border-white/10 text-white placeholder-white/40 focus:ring-orange-500/10 focus:border-orange-500/30 rounded-lg h-9 px-4 font-mono text-[10px] tracking-widest transition-all shadow-inner"
+                  className="w-full pl-12 bg-neutral-900/40 border-white/10 text-white placeholder-white/40 focus:ring-orange-500/10 focus:border-orange-500/30 rounded-lg h-9 pr-4 font-mono text-[10px] tracking-widest transition-all shadow-inner"
                 />
                 {search && (
                    <button

@@ -39,12 +39,13 @@ export async function GET(req: Request) {
     const strategicResults = await prisma.word.findMany({
       where: {
         isActive: true,
+        isVerified: { not: "rejected" },
         word: { startsWith: q, mode: "insensitive" },
         OR: ALL_MAGIC.map(s => ({
           word: { endsWith: s, mode: "insensitive" }
         }))
       },
-      select: { id: true, word: true },
+      select: { id: true, word: true, isVerified: true },
       take: LIMIT,
       orderBy: { word: "asc" },
     });
@@ -57,12 +58,13 @@ export async function GET(req: Request) {
       const otherResults = await prisma.word.findMany({
         where: {
           isActive: true,
+          isVerified: { not: "rejected" },
           word: { startsWith: q, mode: "insensitive" },
           NOT: ALL_MAGIC.map(s => ({
             word: { endsWith: s, mode: "insensitive" }
           }))
         },
-        select: { id: true, word: true },
+        select: { id: true, word: true, isVerified: true },
         take: remaining,
         orderBy: { word: "asc" },
       });
@@ -76,11 +78,12 @@ export async function GET(req: Request) {
   const results = await prisma.word.findMany({
     where: { 
       isActive: true, 
+      isVerified: { not: "rejected" },
       word: mode === "suffix" 
         ? { endsWith: q, mode: "insensitive" } 
         : { contains: q, mode: "insensitive" } 
     },
-    select: { id: true, word: true },
+    select: { id: true, word: true, isVerified: true },
     take: LIMIT,
     orderBy: { word: "asc" },
   });

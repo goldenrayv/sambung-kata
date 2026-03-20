@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Book, Users, History, Plus, Ghost, Download } from "lucide-react";
+import { Book, Users, History, Download, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
 import Link from "next/link";
 import AdminExportButton from "./AdminExportButton";
 
@@ -7,10 +7,11 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
   // Fetch stats in parallel
-  const [totalWords, activeWordsCount, hiddenWordsCount, totalTokens, recentWords, recentTokens] = await Promise.all([
+  const [totalWords, verifiedWords, unverifiedWords, rejectedWords, totalUsers, recentWords, recentUsers] = await Promise.all([
     prisma.word.count(),
-    prisma.word.count({ where: { isActive: true } }),
-    prisma.word.count({ where: { isActive: false } }),
+    prisma.word.count({ where: { isVerified: "verified" } }),
+    prisma.word.count({ where: { isVerified: "unverified" } }),
+    prisma.word.count({ where: { isVerified: "rejected" } }),
     prisma.user.count(),
     prisma.word.findMany({
       orderBy: { id: 'desc' }, 
@@ -24,36 +25,44 @@ export default async function AdminDashboard() {
 
   const stats = [
     {
-      label: "Total Words",
+      label: "Total Corpus",
       value: totalWords,
       icon: Book,
-      color: "text-rose-400",
-      bg: "bg-rose-500/10",
-      border: "border-rose-500/20",
-    },
-    {
-      label: "Active Words",
-      value: activeWordsCount,
-      icon: Plus,
-      color: "text-emerald-400",
-      bg: "bg-emerald-500/10",
-      border: "border-emerald-500/20",
-    },
-    {
-      label: "Hidden Words",
-      value: hiddenWordsCount,
-      icon: Ghost,
       color: "text-white/40",
       bg: "bg-white/5",
       border: "border-white/10",
     },
     {
-      label: "Active Users",
-      value: totalTokens,
-      icon: Users,
+      label: "Verified",
+      value: verifiedWords,
+      icon: ShieldCheck,
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+    },
+    {
+      label: "Unverified",
+      value: unverifiedWords,
+      icon: ShieldAlert,
       color: "text-orange-400",
       bg: "bg-orange-500/10",
       border: "border-orange-500/20",
+    },
+    {
+      label: "Rejected",
+      value: rejectedWords,
+      icon: ShieldX,
+      color: "text-rose-400",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+    },
+    {
+      label: "Active Users",
+      value: totalUsers,
+      icon: Users,
+      color: "text-cyan-400",
+      bg: "bg-cyan-500/10",
+      border: "border-cyan-500/20",
     },
   ];
 
@@ -72,7 +81,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -116,11 +125,17 @@ export default async function AdminDashboard() {
               recentWords.map((word) => (
                 <div key={word.id} className="px-4 py-2.5 flex items-center justify-between group hover:bg-white/[0.01] transition-colors">
                   <div className="flex items-center gap-2.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${word.isActive ? 'bg-emerald-500' : 'bg-white/20'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      word.isVerified === 'verified' ? 'bg-emerald-500' : 
+                      word.isVerified === 'rejected' ? 'bg-rose-500' : 'bg-orange-500'
+                    }`} />
                     <span className="font-bold text-white text-xs tracking-wide uppercase">{word.word}</span>
                   </div>
-                  <span className="text-[9px] font-black text-white uppercase tracking-tighter">
-                    {word.isActive ? 'Live' : 'Hidden'}
+                  <span className={`text-[9px] font-black uppercase tracking-tighter ${
+                    word.isVerified === 'verified' ? 'text-emerald-400' : 
+                    word.isVerified === 'rejected' ? 'text-rose-400' : 'text-orange-400'
+                  }`}>
+                    {word.isVerified}
                   </span>
                 </div>
               ))
@@ -147,8 +162,8 @@ export default async function AdminDashboard() {
             </Link>
           </div>
           <div className="divide-y divide-white/5">
-            {recentTokens.length > 0 ? (
-              recentTokens.map((user) => (
+            {recentUsers.length > 0 ? (
+              recentUsers.map((user) => (
                 <div key={user.id} className="px-4 py-2.5 flex items-center justify-between group hover:bg-white/[0.01] transition-colors">
                   <div>
                     <div className="font-bold text-white text-xs">{user.username}</div>

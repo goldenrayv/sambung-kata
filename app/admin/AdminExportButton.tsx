@@ -25,9 +25,9 @@ export default function AdminExportButton() {
       const wordsWs = XLSX.utils.json_to_sheet(data.words);
       XLSX.utils.book_append_sheet(wb, wordsWs, "Word Repository");
       
-      // 3. Word Review Sheet
-      const reviewsWs = XLSX.utils.json_to_sheet(data.reviews);
-      XLSX.utils.book_append_sheet(wb, reviewsWs, "Word Review");
+      // 3. Tactical Suffixes Sheet
+      const tacticalWs = XLSX.utils.json_to_sheet(data.tacticalSuffixes);
+      XLSX.utils.book_append_sheet(wb, tacticalWs, "Tactical Suffixes");
       
       // Generate filename with date
       const date = new Date().toISOString().split('T')[0];

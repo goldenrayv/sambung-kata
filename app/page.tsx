@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { loginUser, getWordCount, changePassword } from "@/app/actions";
+import { loginUser, getWordCount, changePassword, getTacticalSuffixes } from "@/app/actions";
 import AuthScreen from "./_components/AuthScreen";
 import TopBar from "./_components/TopBar";
 import WordSearch from "./_components/WordSearch";
@@ -13,6 +13,7 @@ export default function Home() {
   const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date; isSuperUser: boolean } | null>(null);
   const [wordCount, setWordCount] = useState(0);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [tacticalSuffixes, setTacticalSuffixes] = useState<any[]>([]);
 
   // Restore session from localStorage on mount
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function Home() {
         isSuperUser: savedSuper
       });
       setIsAuthenticated(true);
-      fetchWordCount();
+      fetchInitialData();
       setLoading(false);
     } else {
       setIsAuthenticated(false);
@@ -37,9 +38,13 @@ export default function Home() {
     }
   }, []);
 
-  const fetchWordCount = async () => {
-    const count = await getWordCount();
+  const fetchInitialData = async () => {
+    const [count, suffixes] = await Promise.all([
+      getWordCount(),
+      getTacticalSuffixes()
+    ]);
     setWordCount(count);
+    setTacticalSuffixes(suffixes);
   };
 
   const handleAuth = async (username: string, password: string) => {
@@ -69,7 +74,7 @@ export default function Home() {
             isSuperUser: !!result.isSuperUser
         });
         setIsAuthenticated(true);
-        fetchWordCount();
+        fetchInitialData();
       }
     } else {
       setIsAuthenticated(false);
@@ -139,7 +144,12 @@ export default function Home() {
         expiresAt={user!.expiresAt}
         onLogout={handleLogout}
       />
-      <WordSearch userId={user!.id} wordCount={wordCount} isSuperUser={user!.isSuperUser} />
+      <WordSearch 
+        userId={user!.id} 
+        wordCount={wordCount} 
+        isSuperUser={user!.isSuperUser} 
+        tacticalSuffixes={tacticalSuffixes}
+      />
     </main>
   );
 }

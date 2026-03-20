@@ -12,9 +12,10 @@ interface Props {
   userId: string;
   wordCount: number;
   isSuperUser: boolean;
+  tacticalSuffixes: any[];
 }
 
-export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
+export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuffixes }: Props) {
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [prefixResults, setPrefixResults] = useState<any[]>([]);
@@ -101,20 +102,23 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
     return () => clearTimeout(timer);
   }, [search, userId]);
 
-  const HARDCODED = ["OI", "LY", "TY", "IF", "GY", "CY", "IC", "EZ", "SN", "ND", "KS", "OA", "OH", "EI", "OO", "TT", "HIH", "HUH", "LEU", "NEU"];
 
   const groupedPrefix = prefixResults.reduce((acc, wordObj: any) => {
     const word = (wordObj.word || wordObj).toUpperCase();
-    const matchedSuffixes: { suffix: string; tier: number }[] = [];
-
-    for (const h of HARDCODED) {
-      if (word.endsWith(h)) matchedSuffixes.push({ suffix: `-${h}`, tier: 1 });
+    
+    // Find the first matching suffix (tacticalSuffixes is sorted by Length DESC)
+    let matchedSuffix = null;
+    for (const ts of tacticalSuffixes) {
+      if (word.endsWith(ts.suffix)) {
+        matchedSuffix = ts.suffix;
+        break; // Unique assignment: first match (longest) wins
+      }
     }
 
-    if (matchedSuffixes.length > 0) {
-      const bestMatch = matchedSuffixes[0];
-      if (!acc[bestMatch.suffix]) acc[bestMatch.suffix] = { words: [], tier: bestMatch.tier };
-      acc[bestMatch.suffix].words.push(wordObj);
+    if (matchedSuffix) {
+      const key = `-${matchedSuffix}`;
+      if (!acc[key]) acc[key] = { words: [], tier: 1 };
+      acc[key].words.push(wordObj);
     } else {
       if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
       acc["Other"].words.push(wordObj);
@@ -219,13 +223,13 @@ export default function WordSearch({ userId, wordCount, isSuperUser }: Props) {
 
         <div className="max-w-3xl mx-auto mt-6 space-y-3 animate-in fade-in slide-in-from-top-4 duration-1000">
           <div className="flex flex-wrap gap-2">
-            {HARDCODED.map((s) => (
+            {tacticalSuffixes.slice(0, 30).map((ts) => (
               <button
-                key={s}
-                onClick={() => setSearch(s)}
+                key={ts.id}
+                onClick={() => setSearch(ts.suffix)}
                 className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-[10px] font-black text-rose-400 hover:bg-rose-500 hover:text-white transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
               >
-                -{s}
+                -{ts.suffix}
               </button>
             ))}
           </div>

@@ -189,6 +189,60 @@ export async function bulkVerifyWords(words: string[]) {
 }
 
 // ---------------------------------------------------------------------------
+// Tactical Suffixes — admin
+// ---------------------------------------------------------------------------
+
+export async function getTacticalSuffixes() {
+  try {
+    // Use raw query to bypass missing client model during dev server lock
+    const suffixes = await prisma.$queryRawUnsafe('SELECT * FROM "TacticalSuffix"');
+    
+    // Sort by length DESC, then alphabetical ASC (e.g., AX, EX, OX, X)
+    return (suffixes as any[]).sort((a: any, b: any) => {
+      if (a.suffix.length !== b.suffix.length) {
+        return b.suffix.length - a.suffix.length;
+      }
+      return a.suffix.localeCompare(b.suffix);
+    });
+  } catch (error) {
+    console.error("Failed to fetch tactical suffixes:", error);
+    return [];
+  }
+}
+
+export async function addTacticalSuffix(suffix: string) {
+  const cleanSuffix = suffix.toUpperCase().trim();
+  if (!cleanSuffix) return { success: false, error: "Suffix cannot be empty" };
+  
+  try {
+    // Use raw execute to avoid missing model error
+    await prisma.$executeRawUnsafe(
+      'INSERT INTO "TacticalSuffix" (id, suffix, tier, "updatedAt") VALUES ($1, $2, $3, NOW())',
+      crypto.randomUUID(),
+      cleanSuffix,
+      1
+    );
+    revalidatePath("/admin/tactical");
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Add suffix failed:", error);
+    return { success: false, error: "Suffix already exists or database error" };
+  }
+}
+
+export async function deleteTacticalSuffix(id: string) {
+  try {
+    await prisma.$executeRawUnsafe('DELETE FROM "TacticalSuffix" WHERE id = $1', id);
+    revalidatePath("/admin/tactical");
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: "Failed to delete suffix" };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Users / Credentials — admin
 // ---------------------------------------------------------------------------
 export async function getUsers(search?: string) {
@@ -320,10 +374,13 @@ export async function exportAllData() {
     },
     orderBy: { word: 'asc' }
   });
-
+  const tacticalSuffixes = await prisma.tacticalSuffix.findMany({
+    orderBy: { suffix: 'asc' }
+  });
 
   return { 
     users: users.map((u: any) => ({ ...u, expiresAt: u.expiresAt.toISOString(), createdAt: u.createdAt.toISOString() })), 
     words: words.map((w: any) => ({ ...w, createdAt: w.createdAt.toISOString() })), 
+    tacticalSuffixes: tacticalSuffixes.map((s: any) => ({ ...s, createdAt: s.createdAt.toISOString() })),
   };
 }

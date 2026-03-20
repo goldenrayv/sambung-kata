@@ -28,4 +28,12 @@ model Word {
   updatedAt  DateTime @updatedAt
 }
 
+model TacticalSuffix {
+  id        String   @id @default(cuid())
+  suffix    String   @unique
+  tier      Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 

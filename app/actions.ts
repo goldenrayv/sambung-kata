@@ -34,6 +34,7 @@ export async function addWord(formData: FormData): Promise<void> {
   try {
     await prisma.word.create({ data: { word } });
     revalidatePath("/admin/words");
+    revalidatePath("/");
   } catch {
     // Word already exists or invalid — silently ignored at the form level.
   }
@@ -107,6 +108,7 @@ export async function insertBulkWords(words: string[]) {
     }
     
     revalidatePath("/admin/words");
+    revalidatePath("/");
     return { success: true };
   } catch (error: any) {
     console.error("Bulk insert failed:", error);
@@ -133,6 +135,7 @@ export async function deleteWord(id: string) {
       data: { isVerified: "rejected" }
     });
     revalidatePath("/admin/words");
+    revalidatePath("/");
     return { success: true };
   } catch (error: any) {
     console.error("Delete failed:", error);
@@ -147,6 +150,7 @@ export async function toggleWordVerification(id: string, currentStatus: string) 
     data: { isVerified: newStatus },
   });
   revalidatePath("/admin/words");
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -181,6 +185,7 @@ export async function bulkVerifyWords(words: string[]) {
     
     revalidatePath("/admin/words");
     revalidatePath("/admin");
+    revalidatePath("/");
     return { success: true, count: result.count };
   } catch (error: any) {
     console.error("Bulk verification failed:", error);
@@ -223,6 +228,7 @@ export async function addTacticalSuffix(suffix: string) {
       1
     );
     revalidatePath("/admin/tactical");
+    revalidatePath("/admin/words");
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {
@@ -235,6 +241,7 @@ export async function deleteTacticalSuffix(id: string) {
   try {
     await prisma.$executeRawUnsafe('DELETE FROM "TacticalSuffix" WHERE id = $1', id);
     revalidatePath("/admin/tactical");
+    revalidatePath("/admin/words");
     revalidatePath("/");
     return { success: true };
   } catch (error: any) {

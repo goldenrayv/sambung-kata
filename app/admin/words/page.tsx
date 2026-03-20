@@ -1,4 +1,10 @@
-import { getAllWordsAdmin, getAllWordCountAdmin, deleteWord, toggleWordVerification } from "@/app/actions";
+import { 
+  getAllWordsAdmin, 
+  getAllWordCountAdmin, 
+  deleteWord, 
+  toggleWordVerification,
+  getTacticalSuffixes
+} from "@/app/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +20,8 @@ import {
   Trash2,
   Zap,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Target
 } from "lucide-react";
 import Link from "next/link";
 import AdminWordManager from "./AdminWordManager";
@@ -34,21 +41,30 @@ export default async function AdminWordsPage({
 
   let words: any[] = [];
   let totalCount = 0;
+  let tacticalSuffixes: any[] = [];
   let error: string | null = null;
 
   try {
-    const [fetchedWords, count] = await Promise.all([
+    const [fetchedWords, count, suffixes] = await Promise.all([
       getAllWordsAdmin(page, PAGE_SIZE, search),
       getAllWordCountAdmin(search),
+      getTacticalSuffixes()
     ]);
     words = fetchedWords;
     totalCount = count;
+    tacticalSuffixes = suffixes;
   } catch (e: any) {
     error = e.message || "Unknown database error";
     console.error("Prisma Error:", e);
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Helper to find the first matching tactical suffix (already sorted by length)
+  const getTacticalMatch = (wordStr: string) => {
+    const w = wordStr.toUpperCase();
+    return tacticalSuffixes.find(ts => w.endsWith(ts.suffix));
+  };
 
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto pb-8">
@@ -105,6 +121,7 @@ export default async function AdminWordsPage({
               <TableBody>
                 {words.length > 0 ? (
                   words.map((word) => {
+                    const tacticalMatch = getTacticalMatch(word.word);
                     return (
                       <TableRow
                         key={word.id}
@@ -121,6 +138,12 @@ export default async function AdminWordsPage({
                                 )}>
                                     {word.word}
                                 </span>
+                                {tacticalMatch && (
+                                   <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/20 text-[8px] font-black uppercase tracking-tighter h-4 flex items-center gap-1 hover:bg-rose-500/20 transition-colors">
+                                     <Target className="w-2.5 h-2.5" />
+                                     -{tacticalMatch.suffix}
+                                   </Badge>
+                                 )}
                            </div>
                         </TableCell>
                         <TableCell className="px-6 py-3">
@@ -150,21 +173,15 @@ export default async function AdminWordsPage({
                           </form>
                         </TableCell>
                         <TableCell className="px-6 py-3">
-                          {word.isActive ? (
-                            <Badge
+                           <Badge
                               variant="outline"
-                              className="bg-emerald-500/5 text-emerald-400 border-emerald-500/10 rounded-md px-1.5 py-0 text-[10px] font-black uppercase tracking-tighter leading-none h-4"
+                              className={cn(
+                                "rounded-md px-1.5 py-0 text-[10px] font-black uppercase tracking-tighter leading-none h-4",
+                                word.isActive ? "bg-emerald-500/5 text-emerald-400 border-emerald-500/10" : "bg-white/10 text-white/70 border-white/10"
+                              )}
                             >
-                              Active
+                              {word.isActive ? "Active" : "Standby"}
                             </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-white/10 text-white/70 border-white/10 rounded-md px-1.5 py-0 text-[10px] font-black uppercase tracking-tighter leading-none h-4"
-                            >
-                              Standby
-                            </Badge>
-                          )}
                         </TableCell>
                         <TableCell className="px-6 py-3 text-right">
                           <form action={async () => {
@@ -241,4 +258,3 @@ export default async function AdminWordsPage({
     </div>
   );
 }
-

@@ -28,22 +28,21 @@ export async function GET(req: Request) {
   const LIMIT = 1000;
 
   if (mode === "prefix") {
-    // Strategic Suffixes
-    const MAGIC_1 = ["Q", "X", "Y", "Z", "V"];
-    const MAGIC_2 = ["AH", "AI", "AZ", "OX", "AX", "EX", "KS", "IA", "IF", "IR", "OI", "OH", "EA", "OA"];
-    const MAGIC_3 = ["ILO", "NDO", "NDA", "TIF", "NEA"];
-    const HARDCODED = ["CY", "LY", "GY", "OO", "SEA", "RD", "RS", "EI"];
-    const ALL_MAGIC = [...MAGIC_1, ...MAGIC_2, ...MAGIC_3, ...HARDCODED];
+    // 1. Fetch dynamic tactical suffixes
+    const tacticalSuffixes = await prisma.tacticalSuffix.findMany({
+      select: { suffix: true }
+    });
+    const ALL_MAGIC = tacticalSuffixes.map(ts => ts.suffix);
 
-    // 1. Fetch Strategic Words (Ending in Magic/Hardcoded suffixes)
+    // 2. Fetch Strategic Words (Ending in dynamic tactical suffixes)
     const strategicResults = await prisma.word.findMany({
       where: {
         isActive: true,
         isVerified: { not: "rejected" },
         word: { startsWith: q, mode: "insensitive" },
-        OR: ALL_MAGIC.map(s => ({
+        OR: ALL_MAGIC.length > 0 ? ALL_MAGIC.map(s => ({
           word: { endsWith: s, mode: "insensitive" }
-        }))
+        })) : undefined
       },
       select: { id: true, word: true, isVerified: true },
       take: LIMIT,
@@ -52,7 +51,7 @@ export async function GET(req: Request) {
 
     let results = strategicResults;
 
-    // 2. If we have space, fill with Other words
+    // 3. If we have space, fill with Other words
     if (results.length < LIMIT) {
       const remaining = LIMIT - results.length;
       const otherResults = await prisma.word.findMany({
@@ -60,9 +59,9 @@ export async function GET(req: Request) {
           isActive: true,
           isVerified: { not: "rejected" },
           word: { startsWith: q, mode: "insensitive" },
-          NOT: ALL_MAGIC.map(s => ({
+          NOT: ALL_MAGIC.length > 0 ? ALL_MAGIC.map(s => ({
             word: { endsWith: s, mode: "insensitive" }
-          }))
+          })) : undefined
         },
         select: { id: true, word: true, isVerified: true },
         take: remaining,
@@ -76,12 +75,12 @@ export async function GET(req: Request) {
 
   // Suffix mode (or fallback) remains original — just alphabetical
   const results = await prisma.word.findMany({
-    where: { 
-      isActive: true, 
+    where: {
+      isActive: true,
       isVerified: { not: "rejected" },
-      word: mode === "suffix" 
-        ? { endsWith: q, mode: "insensitive" } 
-        : { contains: q, mode: "insensitive" } 
+      word: mode === "suffix"
+        ? { endsWith: q, mode: "insensitive" }
+        : { contains: q, mode: "insensitive" }
     },
     select: { id: true, word: true, isVerified: true },
     take: LIMIT,

@@ -47,7 +47,12 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
     const result = await toggleWordVerification(id, "unverified");
     if (result.success) {
       toast.success("Word verified! ✨");
-      setSearch(prev => prev);
+      // Update local state for immediate feedback
+      const updateList = (list: any[]) => list.map(item => 
+        item.id === id ? { ...item, isVerified: "verified" } : item
+      );
+      setPrefixResults(prev => updateList(prev));
+      setSuffixResults(prev => updateList(prev));
     } else {
       toast.error("Failed to verify word");
     }
@@ -58,7 +63,10 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
     const result = await deleteWord(id);
     if (result.success) {
       toast.success("Word rejected (Soft Deleted)");
-      setSearch(prev => prev); 
+      // Update local state for immediate feedback
+      const filterList = (list: any[]) => list.filter(item => item.id !== id);
+      setPrefixResults(prev => filterList(prev));
+      setSuffixResults(prev => filterList(prev));
     } else {
       toast.error(result.error || "Failed to reject word");
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, BookOpen, X, Command, Layout, Columns, Trash2, Check, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +73,8 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
   };
 
+  const abortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     if (!search.trim()) {
       setPrefixData({ results: [], totalCount: 0, hasMore: false });
@@ -84,25 +86,31 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     setIsSearching(true);
 
     const timer = setTimeout(async () => {
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
+      const { signal } = abortRef.current;
+
       try {
-        const promises: Promise<any>[] = [
+        const [pRes, sRes] = await Promise.all([
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix`, {
             headers: { Authorization: `Bearer ${userId}` },
+            signal,
           }),
           fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix`, {
             headers: { Authorization: `Bearer ${userId}` },
-          })
-        ];
-
-        const [pRes, sRes] = await Promise.all(promises);
+            signal,
+          }),
+        ]);
 
         if (pRes.ok && sRes.ok) {
           const [pData, sData] = await Promise.all([pRes.json(), sRes.json()]);
           setPrefixData(pData);
           setSuffixData(sData);
         }
-      } catch (error) {
-        console.error("Search failed:", error);
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Search failed:", error);
+        }
       } finally {
         setIsSearching(false);
       }
@@ -112,51 +120,55 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   }, [search, userId]);
 
 
-  const groupedPrefix = prefixData.results.reduce((acc, wordObj: any) => {
-    const word = (wordObj.word || wordObj).toUpperCase();
-    
-    // Find the first matching suffix (tacticalSuffixes is sorted by Length DESC)
-    let matchedSuffix = null;
-    for (const ts of tacticalSuffixes) {
-      if (word.endsWith(ts.suffix)) {
-        matchedSuffix = ts.suffix;
-        break; // Unique assignment: first match (longest) wins
+  const groupedPrefix = useMemo(() =>
+    prefixData.results.reduce((acc, wordObj: any) => {
+      const word = (wordObj.word || wordObj).toUpperCase();
+
+      let matchedSuffix = null;
+      for (const ts of tacticalSuffixes) {
+        if (word.endsWith(ts.suffix)) {
+          matchedSuffix = ts.suffix;
+          break;
+        }
       }
-    }
 
-    if (matchedSuffix) {
-      const key = `-${matchedSuffix}`;
-      if (!acc[key]) acc[key] = { words: [], tier: 1 };
-      acc[key].words.push(wordObj);
-    } else {
-      if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
-      acc["Other"].words.push(wordObj);
-    }
+      if (matchedSuffix) {
+        const key = `-${matchedSuffix}`;
+        if (!acc[key]) acc[key] = { words: [], tier: 1 };
+        acc[key].words.push(wordObj);
+      } else {
+        if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
+        acc["Other"].words.push(wordObj);
+      }
 
-    return acc;
-  }, {} as Record<string, { words: any[], tier: number }>);
+      return acc;
+    }, {} as Record<string, { words: any[], tier: number }>),
+  [prefixData.results, tacticalSuffixes]);
 
-  const sortedPrefixSuffixes = Object.keys(groupedPrefix).sort((a, b) => {
-    if (a === "Other") return 1;
-    if (b === "Other") return -1;
-    const groupA = groupedPrefix[a];
-    const groupB = groupedPrefix[b];
-    if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
-    return a.localeCompare(b);
-  });
+  const sortedPrefixSuffixes = useMemo(() =>
+    Object.keys(groupedPrefix).sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      const groupA = groupedPrefix[a];
+      const groupB = groupedPrefix[b];
+      if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
+      return a.localeCompare(b);
+    }),
+  [groupedPrefix]);
 
-  const groupedSuffix = suffixData.results.reduce(
-    (acc, wordObj: any) => {
+  const groupedSuffix = useMemo(() =>
+    suffixData.results.reduce((acc, wordObj: any) => {
       const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
-    },
-    {} as Record<string, any[]>
-  );
+    }, {} as Record<string, any[]>),
+  [suffixData.results]);
 
-  const sortedSuffixLetters = Object.keys(groupedSuffix).sort();
+  const sortedSuffixLetters = useMemo(() =>
+    Object.keys(groupedSuffix).sort(),
+  [groupedSuffix]);
   
   return (
     <div className="w-full relative z-10 space-y-8 pb-20">

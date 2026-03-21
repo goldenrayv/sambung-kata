@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, AlertCircle, ShieldCheck, User, Lock, KeyRound, CheckCircle2 } from "lucide-react";
+import { ArrowRight, AlertCircle, ShieldCheck, User, Lock, KeyRound, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -140,8 +140,10 @@ export default function AuthScreen({
                         </p>
                       </div>
                       <div className="h-[1px] bg-rose-500/10 w-full" />
-                      <p className="text-[10px] text-rose-400 font-black uppercase tracking-wider text-center">
-                        Contact TikTok <span className="text-rose-500">@vlodex</span> for access
+                      <p className="text-[10px] font-black uppercase tracking-wider text-center">
+                        <span className="text-white/60">Contact TikTok </span>
+                        <a href="https://tiktok.com/@vlodex12" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-all underline underline-offset-4 decoration-sky-400/30 hover:decoration-sky-400 hover:bg-sky-400/5 px-1.5 py-0.5 -mx-1 -my-0.5 rounded-md">@vlodex12 <ExternalLink className="w-2.5 h-2.5" /></a> 
+                        <span className="text-white/60"> for access</span>
                       </p>
                   </div>
                 )}
@@ -220,8 +222,10 @@ export default function AuthScreen({
               <p className="text-[10px] text-center text-white/50 font-black uppercase tracking-[0.2em]">
                 Authorized Personnel Only
               </p>
-              <p className="text-[9px] text-center text-rose-500/80 font-black uppercase tracking-widest italic">
-                Contact TikTok @vlodex to gain access
+              <p className="text-[9px] text-center font-black uppercase tracking-widest italic">
+                <span className="text-white/50">Contact TikTok </span>
+                <a href="https://tiktok.com/@vlodex12" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-all underline underline-offset-4 decoration-sky-400/30 hover:decoration-sky-400 hover:bg-sky-400/5 px-1.5 py-0.5 -mx-1 -my-0.5 rounded-md">@vlodex12 <ExternalLink className="w-2.5 h-2.5" /></a> 
+                <span className="text-white/50"> to gain access</span>
               </p>
             </div>
           </CardContent>

@@ -44,7 +44,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     <div className="space-y-8 max-w-5xl mx-auto pb-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/5">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight bg-gradient-to-br from-white via-white to-white/40 text-transparent bg-clip-text font-heading">
+          <h1 className="text-2xl font-black tracking-tighter bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text uppercase font-heading">
             User Management
           </h1>
           <p className="text-white/60 text-[10px] font-black tracking-widest uppercase">System Access & Identity Control</p>

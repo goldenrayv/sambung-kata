@@ -34,34 +34,34 @@ export default async function AdminLoginPage({
 
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.1),transparent_40%)]">
-      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
         <div className="text-center space-y-4">
-          <div className="inline-flex p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 mb-2">
+          <div className="inline-flex p-4 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-500 mb-2 shadow-[0_0_30px_rgba(244,63,94,0.1)]">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight font-heading">Admin Portal</h1>
-          <p className="text-white">Enter the admin secret to access the dashboard.</p>
+          <h1 className="text-4xl font-black tracking-tight font-heading">Admin Portal</h1>
+          <p className="text-white/70 text-sm font-black uppercase tracking-widest italic">Enter the admin secret to access the dashboard.</p>
         </div>
 
-        <Card className="bg-neutral-900/50 backdrop-blur-xl border-white/10 shadow-2xl rounded-3xl overflow-hidden">
-          <CardContent className="p-8 space-y-6">
+        <Card className="bg-neutral-900/40 backdrop-blur-2xl border-white/5 shadow-2xl rounded-[40px] overflow-hidden">
+          <CardContent className="p-10 space-y-6">
             <form action={adminLogin} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-white ml-1">Admin Secret</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/60 ml-1">Admin Secret</label>
                 <div className="relative group">
                   <Input
                     name="secret"
                     type="password"
                     placeholder="••••••••••••"
                     autoFocus
-                    className="w-full bg-neutral-800 border-white/10 rounded-xl px-4 py-8 text-white placeholder-white/40 focus:ring-2 focus:ring-rose-500 outline-none transition-all pr-14 text-lg"
+                    className="w-full bg-white/[0.02] border-white/5 rounded-2xl pl-12 pr-4 py-7 text-white placeholder-white/40 focus:ring-rose-500/20 focus:border-rose-500/40 outline-none transition-all text-lg font-bold tracking-tight"
                     required
                   />
                   <Button
                     type="submit"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-rose-600 hover:bg-rose-500 transition-colors shadow-lg rounded-lg h-12 w-12"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-rose-500 hover:bg-rose-400 transition-colors shadow-lg rounded-xl h-12 w-12"
                   >
                     <ArrowRight className="w-5 h-5" />
                   </Button>

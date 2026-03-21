@@ -60,9 +60,9 @@ export default async function AdminDashboard() {
       label: "Active Users",
       value: totalUsers,
       icon: Users,
-      color: "text-cyan-400",
-      bg: "bg-cyan-500/10",
-      border: "border-cyan-500/20",
+      color: "text-white/60",
+      bg: "bg-white/5",
+      border: "border-white/10",
     },
   ];
 

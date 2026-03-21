@@ -136,7 +136,7 @@ export default function BulkVerifyPage() {
 
       {/* Confirmation Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-2xl rounded-[28px] p-0 overflow-hidden shadow-[0_0_80px_rgba(16,185,129,0.15)]">
+        <DialogContent className="bg-neutral-950 border border-white/10 text-white max-w-2xl rounded-3xl p-0 overflow-hidden shadow-[0_0_80px_rgba(16,185,129,0.15)]">
           <div className="p-6 space-y-6 max-h-[80vh] flex flex-col font-sans">
             <DialogHeader>
                 <div className="flex items-center gap-3">

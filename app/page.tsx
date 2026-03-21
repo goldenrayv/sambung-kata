@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { loginUser, getWordCount, changePassword, getTacticalSuffixes } from "@/app/actions";
+import { loginUser, getWordCount, changePassword, getTacticalSuffixes, getAdminWordStats } from "@/app/actions";
 import AuthScreen from "./_components/AuthScreen";
 import TopBar from "./_components/TopBar";
 import WordSearch from "./_components/WordSearch";
@@ -12,6 +12,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date; isSuperUser: boolean } | null>(null);
   const [wordCount, setWordCount] = useState(0);
+  const [wordStats, setWordStats] = useState({ verified: 0, unverified: 0, rejected: 0 });
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [tacticalSuffixes, setTacticalSuffixes] = useState<any[]>([]);
 
@@ -39,11 +40,13 @@ export default function Home() {
   }, []);
 
   const fetchInitialData = async () => {
-    const [count, suffixes] = await Promise.all([
+    const [count, stats, suffixes] = await Promise.all([
       getWordCount(),
+      getAdminWordStats(),
       getTacticalSuffixes()
     ]);
     setWordCount(count);
+    setWordStats(stats);
     setTacticalSuffixes(suffixes);
   };
 
@@ -147,6 +150,7 @@ export default function Home() {
       <WordSearch 
         userId={user!.id} 
         wordCount={wordCount} 
+        wordStats={wordStats}
         isSuperUser={user!.isSuperUser} 
         tacticalSuffixes={tacticalSuffixes}
       />

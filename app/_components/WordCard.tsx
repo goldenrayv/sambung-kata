@@ -27,19 +27,17 @@ export default function WordCard({ word, search = "", searchMode = "prefix", isS
   return (
     <div
       className={`px-2.5 py-1.5 rounded-lg border flex items-center justify-between group transition-all duration-200 ${isVerified === "verified"
-          ? "bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
-          : cue
-            ? cue === "Prefix Match" 
-              ? "bg-rose-500/5 border-rose-500/20 hover:bg-rose-500/10"
-              : "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10"
-            : "bg-neutral-900/40 border-white/5 hover:border-white/10 hover:bg-neutral-800/40"
-        }`}
+        ? "bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+        : cue
+          ? "bg-orange-500/5 border-orange-500/20 hover:bg-orange-500/10"
+          : "bg-neutral-900/40 border-white/5 hover:border-white/10 hover:bg-neutral-800/40"
+      }`}
     >
       <span
         className={`text-[11px] tracking-widest transition-colors uppercase ${isVerified === "verified"
           ? "text-emerald-400 font-black"
           : cue 
-            ? cue === "Prefix Match" ? "text-rose-100 font-black" : "text-orange-100 font-black"
+            ? "text-orange-100 font-extrabold"
             : "text-white font-bold"
           }`}
       >
@@ -75,15 +73,10 @@ export default function WordCard({ word, search = "", searchMode = "prefix", isS
           </div>
         )}
         <div className="flex items-center gap-1">
-          {isVerified === "verified" && (
-             <Check className="w-2.5 h-2.5 text-emerald-500" />
-          )}
-          {cue && (
-            <div
-              className={`w-1 h-1 rounded-full ${cue === "Prefix Match" ? "bg-rose-500" : "bg-orange-500"}`}
-              title={cue}
-            />
-          )}
+          <div
+            className={`w-1.5 h-1.5 rounded-full shadow-[0_0_5px_rgba(0,0,0,0.2)] ${isVerified === "verified" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-orange-500 shadow-[0_0_8px_rgba(251,146,60,0.5)]"}`}
+            title={isVerified}
+          />
         </div>
       </div>
     </div>

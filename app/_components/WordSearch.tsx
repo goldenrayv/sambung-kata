@@ -18,8 +18,8 @@ interface Props {
 export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuffixes }: Props) {
   const [search, setSearch] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [prefixResults, setPrefixResults] = useState<any[]>([]);
-  const [suffixResults, setSuffixResults] = useState<any[]>([]);
+  const [prefixData, setPrefixData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
+  const [suffixData, setSuffixData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
   const [isSearching, setIsSearching] = useState(false);
   const [showSuffix, setShowSuffix] = useState(true);
 
@@ -51,8 +51,8 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
       const updateList = (list: any[]) => list.map(item => 
         item.id === id ? { ...item, isVerified: "verified" } : item
       );
-      setPrefixResults(prev => updateList(prev));
-      setSuffixResults(prev => updateList(prev));
+      setPrefixData(prev => ({ ...prev, results: updateList(prev.results) }));
+      setSuffixData(prev => ({ ...prev, results: updateList(prev.results) }));
     } else {
       toast.error("Failed to verify word");
     }
@@ -65,8 +65,8 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
       toast.success("Word rejected (Soft Deleted)");
       // Update local state for immediate feedback
       const filterList = (list: any[]) => list.filter(item => item.id !== id);
-      setPrefixResults(prev => filterList(prev));
-      setSuffixResults(prev => filterList(prev));
+      setPrefixData(prev => ({ ...prev, results: filterList(prev.results), totalCount: prev.totalCount - 1 }));
+      setSuffixData(prev => ({ ...prev, results: filterList(prev.results), totalCount: prev.totalCount - 1 }));
     } else {
       toast.error(result.error || "Failed to reject word");
     }
@@ -74,8 +74,8 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
 
   useEffect(() => {
     if (!search.trim()) {
-      setPrefixResults([]);
-      setSuffixResults([]);
+      setPrefixData({ results: [], totalCount: 0, hasMore: false });
+      setSuffixData({ results: [], totalCount: 0, hasMore: false });
       setIsSearching(false);
       return;
     }
@@ -97,8 +97,8 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
 
         if (pRes.ok && sRes.ok) {
           const [pData, sData] = await Promise.all([pRes.json(), sRes.json()]);
-          setPrefixResults(pData);
-          setSuffixResults(sData);
+          setPrefixData(pData);
+          setSuffixData(sData);
         }
       } catch (error) {
         console.error("Search failed:", error);
@@ -111,7 +111,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
   }, [search, userId]);
 
 
-  const groupedPrefix = prefixResults.reduce((acc, wordObj: any) => {
+  const groupedPrefix = prefixData.results.reduce((acc, wordObj: any) => {
     const word = (wordObj.word || wordObj).toUpperCase();
     
     // Find the first matching suffix (tacticalSuffixes is sorted by Length DESC)
@@ -144,7 +144,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
     return a.localeCompare(b);
   });
 
-  const groupedSuffix = suffixResults.reduce(
+  const groupedSuffix = suffixData.results.reduce(
     (acc, wordObj: any) => {
       const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
@@ -207,7 +207,7 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
               <div className="px-4 py-1.5 border-t border-white/5 bg-white/[0.02] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="text-[10px] font-bold text-white tracking-widest uppercase flex items-center gap-2">
                   <span className="w-1 h-1 rounded-full bg-rose-500 animate-pulse" />
-                  {(prefixResults.length + suffixResults.length).toLocaleString()} matches found
+                  {(prefixData.totalCount + suffixData.totalCount).toLocaleString()} matches found
                 </div>
                 
                 <div className="flex items-center flex-wrap gap-4">
@@ -285,9 +285,19 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
               )}
             </div>
             
-            <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
-              <span className="opacity-80 whitespace-nowrap italic">Starts with</span>
-              <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
+            <div className="flex items-center justify-between w-full">
+              <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
+                <span className="opacity-80 whitespace-nowrap italic">Starts with</span>
+                <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-rose-400/60 uppercase tracking-widest">{prefixData.totalCount.toLocaleString()} TOTAL</span>
+                {prefixData.hasMore && (
+                  <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-black animate-pulse">
+                    + MORE (Reach Limit)
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -339,9 +349,19 @@ export default function WordSearch({ userId, wordCount, isSuperUser, tacticalSuf
                   <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
                 </div>
                 
-                <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
-                  <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
-                  <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
+                    <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
+                    <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-orange-400/60 uppercase tracking-widest">{suffixData.totalCount.toLocaleString()} TOTAL</span>
+                    {suffixData.hasMore && (
+                      <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-black animate-pulse">
+                        + MORE (Reach Limit)
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

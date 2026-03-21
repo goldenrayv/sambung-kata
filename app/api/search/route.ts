@@ -34,7 +34,14 @@ export async function GET(req: Request) {
     });
     const ALL_MAGIC = tacticalSuffixes.map(ts => ts.suffix);
 
-    // 2. Fetch Strategic Words (Ending in dynamic tactical suffixes)
+    const totalCount = await prisma.word.count({
+      where: {
+        isActive: true,
+        isVerified: { not: "rejected" },
+        word: { startsWith: q, mode: "insensitive" },
+      }
+    });
+
     const strategicResults = await prisma.word.findMany({
       where: {
         isActive: true,
@@ -70,22 +77,35 @@ export async function GET(req: Request) {
       results = [...results, ...otherResults];
     }
 
-    return NextResponse.json(results);
+    return NextResponse.json({
+      results,
+      totalCount,
+      hasMore: totalCount > LIMIT
+    });
   }
 
   // Suffix mode (or fallback) remains original — just alphabetical
-  const results = await prisma.word.findMany({
-    where: {
-      isActive: true,
-      isVerified: { not: "rejected" },
-      word: mode === "suffix"
-        ? { endsWith: q, mode: "insensitive" }
-        : { contains: q, mode: "insensitive" }
-    },
-    select: { id: true, word: true, isVerified: true },
-    take: LIMIT,
-    orderBy: { word: "asc" },
-  });
+  const whereClause = {
+    isActive: true,
+    isVerified: { not: "rejected" },
+    word: mode === "suffix"
+      ? { endsWith: q, mode: "insensitive" as const }
+      : { contains: q, mode: "insensitive" as const }
+  };
 
-  return NextResponse.json(results);
+  const [results, totalCount] = await Promise.all([
+    prisma.word.findMany({
+      where: whereClause,
+      select: { id: true, word: true, isVerified: true },
+      take: LIMIT,
+      orderBy: { word: "asc" },
+    }),
+    prisma.word.count({ where: whereClause })
+  ]);
+
+  return NextResponse.json({
+    results,
+    totalCount,
+    hasMore: totalCount > LIMIT
+  });
 }

@@ -176,24 +176,24 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         <div className="max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-start lg:items-center gap-6 pt-4">
           
           {/* Stats Cards - Left */}
-          <div className="flex flex-row lg:flex-col xl:flex-row gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 w-full lg:w-auto">
             {/* Total Card */}
-            <div className="min-w-[100px] flex-1 lg:flex-none p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
+            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
               <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Total</div>
               <div className="text-xl font-black text-white tracking-tighter">{(wordStats.verified + wordStats.unverified + wordStats.rejected).toLocaleString()}</div>
             </div>
             {/* Verified Card */}
-            <div className="min-w-[100px] flex-1 lg:flex-none p-3 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10 shadow-inner">
+            <div className="p-3 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10 shadow-inner">
               <div className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest mb-1">Verified</div>
               <div className="text-xl font-black text-emerald-400 tracking-tighter">{wordStats.verified.toLocaleString()}</div>
             </div>
             {/* Unverified Card */}
-            <div className="min-w-[100px] flex-1 lg:flex-none p-3 rounded-2xl bg-orange-500/[0.03] border border-orange-500/10 shadow-inner">
+            <div className="p-3 rounded-2xl bg-orange-500/[0.03] border border-orange-500/10 shadow-inner">
               <div className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1">Unverified</div>
               <div className="text-xl font-black text-orange-400 tracking-tighter">{wordStats.unverified.toLocaleString()}</div>
             </div>
             {/* Rejected (Hidden) Card */}
-            <div className="min-w-[100px] flex-1 lg:flex-none p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
+            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
               <div className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">Rejected (Hidden)</div>
               <div className="text-xl font-black text-white/40 tracking-tighter">{wordStats.rejected.toLocaleString()}</div>
             </div>
@@ -245,16 +245,16 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
           </div>
 
           {/* Legend Cards - Right */}
-          <div className="flex flex-row lg:flex-col xl:flex-row gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-hide lg:justify-end">
-            <div className="min-w-[100px] flex-1 lg:flex-none px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-center">
+          <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
+            <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-center">
               <div className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Verified</div>
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
             </div>
-            <div className="min-w-[100px] flex-1 lg:flex-none px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 flex flex-col items-center justify-center text-center">
+            <div className="px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 flex flex-col items-center justify-center text-center">
               <div className="text-[8px] font-black text-orange-400 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Unverified</div>
               <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(251,146,60,0.5)]" />
             </div>
-            <div className="min-w-[100px] flex-1 lg:flex-none px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
+            <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
               <div className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Rejected</div>
               <div className="text-[7px] font-black text-white/20 uppercase tracking-tighter mb-1">(Hidden)</div>
               <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
@@ -275,7 +275,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             ))}
           </div>
         </div>
-      </div>      <div className={`grid grid-cols-1 ${showSuffix ? "md:grid-cols-2" : "md:grid-cols-1"} gap-6 min-h-[60vh] border-t border-white/5 pt-8`}>
+      </div>      <div className={`grid grid-cols-1 ${showSuffix ? "lg:grid-cols-2" : ""} gap-6 min-h-[60vh] border-t border-white/5 pt-8`}>
         {/* Prefix Container */}
         <div className={`space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] transition-all duration-500 ${!showSuffix ? "col-span-full" : ""}`}>
           <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
@@ -435,11 +435,16 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       </div>
 
       {!search && (
-        <div className="flex flex-col items-center justify-center py-32 text-white/80">
-          <BookOpen className="w-16 h-16 mb-4 opacity-40" />
-          <p className="text-lg font-black tracking-widest uppercase italic font-mono">
-            Search {wordCount.toLocaleString()} active tokens
-          </p>
+        <div className="flex flex-col items-center justify-center py-32 gap-4 text-white/80">
+          <BookOpen className="w-16 h-16 opacity-20" />
+          <div className="text-center space-y-1">
+            <p className="text-lg font-black tracking-widest uppercase italic font-mono opacity-60">
+              {wordCount.toLocaleString()} active tokens
+            </p>
+            <p className="text-[11px] font-bold text-white/30 uppercase tracking-widest">
+              Type a word or tap a suffix above to begin
+            </p>
+          </div>
         </div>
       )}
     </div>

@@ -29,9 +29,17 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
       </div>
 
       <div className="flex items-center gap-4 relative">
+        {/* Tips Popup backdrop */}
+        {showTips && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowTips(false)}
+          />
+        )}
+
         {/* Tips Popup */}
         {showTips && (
-          <div className="absolute right-0 top-12 w-80 bg-neutral-900 border border-white/10 rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in slide-in-from-top-4 duration-300 z-50">
+          <div className="absolute right-0 top-12 w-[min(320px,calc(100vw-2rem))] bg-neutral-900 border border-white/10 rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in slide-in-from-top-4 duration-300 z-50">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-rose-500" />
@@ -102,9 +110,14 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
           </button>
           
           <div className="flex flex-col items-end mr-1">
+            {isWarning && (
+              <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest animate-pulse whitespace-nowrap">
+                Expires soon!
+              </span>
+            )}
             <span className="text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1">
               <span className={isWarning ? "text-orange-400 animate-pulse" : "text-white/60"}>
-                {diffDays}d
+                {diffDays}d left
               </span>
             </span>
           </div>

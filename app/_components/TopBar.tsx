@@ -22,8 +22,9 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
 
   return (
     <div className="sticky top-0 z-30 w-full max-w-full flex items-center justify-between mb-4 animate-in fade-in duration-500 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 p-2 rounded-none -mx-4 md:-mx-8 px-4 md:px-8">
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-bold font-heading bg-gradient-to-r from-rose-400 to-orange-400 text-transparent bg-clip-text italic tracking-tighter">
+      <div className="flex items-center gap-2.5">
+        <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-rose-400 to-orange-400 shadow-[0_0_12px_rgba(251,113,133,0.6)] shrink-0" />
+        <h1 className="text-xl font-black font-heading bg-gradient-to-r from-rose-300 via-orange-400 to-amber-300 text-transparent bg-clip-text tracking-tight drop-shadow-[0_0_12px_rgba(251,113,133,0.3)]">
           Sambung Kata
         </h1>
       </div>

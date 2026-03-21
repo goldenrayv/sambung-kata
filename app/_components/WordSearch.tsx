@@ -170,126 +170,121 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   [groupedSuffix]);
   
   return (
-    <div className="w-full relative z-10 space-y-8 pb-20">
-      <div className="sticky top-20 z-20 pb-6 -mx-4 px-4 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
-        <div className="max-w-7xl mx-auto w-full flex flex-col lg:flex-row items-start lg:items-center gap-6 pt-4">
-          
-          {/* Stats Cards - Left */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-2 w-full lg:w-auto">
-            {/* Total Card */}
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
-              <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">Total</div>
-              <div className="text-xl font-black text-white tracking-tighter">{(wordStats.verified + wordStats.unverified + wordStats.rejected).toLocaleString()}</div>
-            </div>
-            {/* Verified Card */}
-            <div className="p-3 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10 shadow-inner">
-              <div className="text-[9px] font-black text-emerald-400/60 uppercase tracking-widest mb-1">Verified</div>
-              <div className="text-xl font-black text-emerald-400 tracking-tighter">{wordStats.verified.toLocaleString()}</div>
-            </div>
-            {/* Unverified Card */}
-            <div className="p-3 rounded-2xl bg-orange-500/[0.03] border border-orange-500/10 shadow-inner">
-              <div className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1">Unverified</div>
-              <div className="text-xl font-black text-orange-400 tracking-tighter">{wordStats.unverified.toLocaleString()}</div>
-            </div>
-            {/* Rejected (Hidden) Card */}
-            <div className="p-3 rounded-2xl bg-rose-500/[0.03] border border-rose-500/10 shadow-inner">
-              <div className="flex items-baseline gap-1.5 mb-1">
-                <div className="text-[9px] font-black text-rose-400/50 uppercase tracking-widest">Rejected</div>
-                <div className="text-[8px] font-black text-white/20 uppercase tracking-widest">(hidden)</div>
-              </div>
-              <div className="text-xl font-black text-rose-400/50 tracking-tighter">{wordStats.rejected.toLocaleString()}</div>
-            </div>
+    <div className="w-full relative z-10 pb-20">
+
+      {/* Stats — 4 cards, centered, scrolls with page */}
+      <div className="flex justify-center py-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+            <div className="text-[8px] font-black text-white/30 uppercase tracking-[0.4em]">Total</div>
+            <div className="text-3xl font-black text-white tracking-tighter leading-none">{(wordStats.verified + wordStats.unverified + wordStats.rejected).toLocaleString()}</div>
           </div>
+          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/[0.12] shadow-[inset_0_1px_0_rgba(16,185,129,0.05)]">
+            <div className="text-[8px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Verified</div>
+            <div className="text-3xl font-black text-emerald-400 tracking-tighter leading-none">{wordStats.verified.toLocaleString()}</div>
+          </div>
+          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-orange-500/[0.04] border border-orange-500/[0.12] shadow-[inset_0_1px_0_rgba(251,146,60,0.05)]">
+            <div className="text-[8px] font-black text-orange-400/60 uppercase tracking-[0.4em]">Unverified</div>
+            <div className="text-3xl font-black text-orange-400 tracking-tighter leading-none">{wordStats.unverified.toLocaleString()}</div>
+          </div>
+          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-rose-500/[0.03] border border-rose-500/[0.08] shadow-[inset_0_1px_0_rgba(244,63,94,0.04)]">
+            <div className="text-[8px] font-black text-rose-400/40 uppercase tracking-[0.4em]">Rejected</div>
+            <div className="text-3xl font-black text-rose-400/50 tracking-tighter leading-none">{wordStats.rejected.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
 
-          <div className="max-w-3xl mx-auto w-full relative group flex-1">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-          
-          <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50 animate-border-glow">
-            <div className="flex items-center px-4 py-3.5 gap-3">
-              <button
-                onClick={() => setShowSuffix(!showSuffix)}
-                title={showSuffix ? "Hide Suffix Results" : "Show Suffix Results"}
-                className={`p-1.5 rounded-md transition-all duration-300 ${
-                  showSuffix 
-                    ? "bg-white/5 border border-white/10 text-white/40 hover:text-white" 
-                    : "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
-                }`}
-              >
-                {showSuffix ? <Columns className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
-              </button>
-              
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search across repository..."
-                className="flex-1 bg-transparent text-xl font-bold text-white placeholder-white/50 border-none outline-none ring-0 shadow-none p-0 h-auto italic"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                autoFocus
-              />
+      {/* Sticky: search bar + suffix chips only */}
+      <div className="sticky top-20 z-20 -mx-4 px-4 pb-4 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
+        <div className="max-w-4xl mx-auto flex flex-col gap-3 pt-3">
 
-              <div className="flex items-center gap-3">
-                {search && (
-                  <button
-                    onClick={() => setSearch("")}
-                    className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-                <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/20 bg-white/5 text-[10px] font-black text-white/50 select-none">
-                  <Command className="w-2.5 h-2.5" />
-                  <span>K</span>
+          {/* Search bar */}
+          <div className="w-full relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
+            <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50">
+              <div className="flex items-center px-4 py-3.5 gap-3">
+                <button
+                  onClick={() => setShowSuffix(!showSuffix)}
+                  title={showSuffix ? "Hide Suffix Results" : "Show Suffix Results"}
+                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                    showSuffix
+                      ? "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                      : "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
+                  }`}
+                >
+                  {showSuffix ? <Columns className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
+                </button>
+
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search across repository..."
+                  className="flex-1 bg-transparent text-xl font-bold text-white placeholder-white/50 border-none outline-none ring-0 shadow-none p-0 h-auto italic"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  autoFocus
+                />
+
+                <div className="flex items-center gap-3">
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                  <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/20 bg-white/5 text-[10px] font-black text-white/50 select-none">
+                    <Command className="w-2.5 h-2.5" />
+                    <span>K</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          </div>
 
-          {/* Legend Cards - Right */}
-          <div className="grid grid-cols-3 gap-2 w-full lg:w-auto">
-            <div className="px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-center">
-              <div className="text-[8px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Verified</div>
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            </div>
-            <div className="px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 flex flex-col items-center justify-center text-center">
-              <div className="text-[8px] font-black text-orange-400 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Unverified</div>
-              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(251,146,60,0.5)]" />
-            </div>
-            <div className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 flex flex-col items-center justify-center text-center">
-              <div className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em] mb-0.5 whitespace-nowrap">Rejected</div>
-              <div className="text-[7px] font-black text-white/20 uppercase tracking-tighter mb-1">(Hidden)</div>
-              <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-3xl mx-auto mt-6 space-y-3 animate-in fade-in slide-in-from-top-4 duration-1000">
+          {/* Suffix chips */}
           <div className="flex flex-wrap gap-2">
-            {tacticalSuffixes.slice(0, 30).map((ts) => (
+            {tacticalSuffixes.map((ts) => (
               <button
                 key={ts.id}
                 onClick={() => setSearch(ts.suffix)}
-                className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-[10px] font-black text-rose-400 hover:bg-rose-500 hover:text-white transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
+                className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-[10px] font-black text-sky-400 hover:bg-sky-500 hover:text-white transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
               >
                 -{ts.suffix}
               </button>
             ))}
           </div>
         </div>
-      </div>      <div className={`grid grid-cols-1 ${showSuffix ? "lg:grid-cols-2" : ""} gap-6 min-h-[60vh] border-t border-white/5 pt-8`}>
+      </div>
+
+      <div className="mt-8 border-t border-white/5 pt-8">
+        {/* Legend — Top, horizontal centered */}
+        <div className="flex items-center justify-center gap-6 mb-8 py-3 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.05] w-fit mx-auto">
+          <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Status Legend</div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Verified</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(251,146,60,0.5)]" />
+            <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Unverified</span>
+          </div>
+        </div>
+
+        <div className={`grid grid-cols-1 ${showSuffix ? "lg:grid-cols-2" : ""} gap-6 items-start min-h-[60vh]`}>
         {/* Prefix Container */}
-        <div className={`space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] transition-all duration-500 ${!showSuffix ? "col-span-full" : ""}`}>
-          <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
-            <div className="flex items-center gap-6 w-full flex-wrap">
-              <div className="flex items-center gap-3">
-                <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">PREFIX</h2>
+        <div className={`space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] transition-all duration-500 flex-1 ${!showSuffix ? "col-span-full" : ""}`}>
+          <div className="flex flex-col border-b border-orange-500/10 pb-4 h-44 px-1">
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-3 h-10 pt-2">
+                <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">PREFIX</h2>
                 {!showSuffix && (
                   <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[10px] font-black tracking-widest uppercase">Full Width</Badge>
                 )}
               </div>
               
-              <div className="flex items-center w-full min-h-[24px]">
+              <div className="min-h-[32px] flex items-center">
                 {isSearching ? (
                   <div className="flex items-center gap-2 animate-pulse">
                     <div className="w-2 h-2 rounded-full bg-orange-500/40" />
@@ -314,7 +309,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             </div>
 
-            <div className="flex items-center justify-between w-full pt-4 border-t border-orange-500/5">
+            <div className="flex items-center justify-between w-full pt-4 border-t border-orange-500/5 mt-auto">
               <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
                 <span className="opacity-80 whitespace-nowrap italic">Starts with</span>
                 <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
@@ -372,26 +367,29 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
         {/* Suffix Container */}
         {showSuffix && (
-          <div className="space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="flex flex-col border-b border-orange-500/10 pb-4 gap-4 min-h-[140px] justify-end">
-              <div className="flex items-center gap-6 w-full flex-wrap">
-                <div className="flex items-center gap-3">
-                  <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)]">SUFFIX</h2>
+          <div className="space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
+            <div className="flex flex-col border-b border-orange-500/10 pb-4 h-44 px-1">
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-3 h-10 pt-2">
+                  <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">SUFFIX</h2>
                 </div>
                 
-                <div className="flex items-center justify-between w-full pt-4 border-t border-orange-500/5">
-                  <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
-                    <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
-                    <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-orange-400/60 uppercase tracking-widest">{suffixData.totalCount.toLocaleString()} TOTAL</span>
-                    {suffixData.hasMore && (
-                      <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-black animate-pulse">
-                        + MORE (Reach Limit)
-                      </Badge>
-                    )}
-                  </div>
+                {/* Empty spacer for alignment with Prefix navigation letters */}
+                <div className="min-h-[32px]" />
+              </div>
+
+              <div className="flex items-center justify-between w-full pt-4 border-t border-orange-500/5 mt-auto">
+                <div className="text-[10px] font-black text-white tracking-widest uppercase flex items-center gap-2">
+                  <span className="opacity-80 whitespace-nowrap italic">Ends with</span>
+                  <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black text-orange-400/60 uppercase tracking-widest">{suffixData.totalCount.toLocaleString()} TOTAL</span>
+                  {suffixData.hasMore && (
+                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-black animate-pulse">
+                      + MORE (Reach Limit)
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -434,6 +432,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {!search && (

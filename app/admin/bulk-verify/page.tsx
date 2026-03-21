@@ -28,7 +28,7 @@ export default function BulkVerifyPage() {
 
   const handlePreview = async () => {
     const wordList = text
-      .split(/[\n,]+/)
+      .split(/\s+/)
       .map((w) => w.trim())
       .filter(Boolean);
 

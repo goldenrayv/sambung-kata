@@ -172,8 +172,19 @@ export async function bulkVerifyWords(words: string[]) {
   if (words.length === 0) return { success: true, count: 0 };
   
   try {
-    const cleanWords = Array.from(new Set(words.map(w => w.toLowerCase().trim()).filter(Boolean)));
+    const cleanWords = Array.from(new Set(words.map(w => w.toUpperCase().trim()).filter(Boolean)));
     
+    // 1. Insert any words that don't exist yet as verified
+    await prisma.word.createMany({
+      data: cleanWords.map(word => ({
+        word,
+        isVerified: "verified",
+        updatedAt: new Date()
+      })),
+      skipDuplicates: true
+    });
+
+    // 2. Ensure existing words are also upgraded to verified
     const result = await prisma.word.updateMany({
       where: {
         word: { in: cleanWords }
@@ -186,7 +197,7 @@ export async function bulkVerifyWords(words: string[]) {
     revalidatePath("/admin/words");
     revalidatePath("/admin");
     revalidatePath("/");
-    return { success: true, count: result.count };
+    return { success: true, count: cleanWords.length };
   } catch (error: any) {
     console.error("Bulk verification failed:", error);
     return { success: false, error: error.message };

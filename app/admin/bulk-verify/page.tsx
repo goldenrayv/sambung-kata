@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, Info, CheckCircle2, AlertCircle, Loader2, Database } from "lucide-react";
+import { ShieldCheck, Info, CheckCircle2, AlertCircle, Loader2, PlusCircle, X } from "lucide-react";
 import { bulkVerifyWords, checkNewWords } from "@/app/actions";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -49,21 +49,32 @@ export default function BulkVerifyPage() {
     }
   };
 
+  const handleRemoveNewWord = (word: string) => {
+    if (!validationResult) return;
+    setValidationResult({
+      ...validationResult,
+      newWords: validationResult.newWords.filter((w) => w !== word),
+    });
+  };
+
   const handleConfirmAction = async () => {
-    if (!validationResult || validationResult.existingWords.length === 0) {
+    if (!validationResult) return;
+    
+    const allWords = [...validationResult.existingWords, ...validationResult.newWords];
+    if (allWords.length === 0) {
       setDialogOpen(false);
       return;
     }
 
     setIsVerifying(true);
     try {
-      const result = await bulkVerifyWords(validationResult.existingWords);
+      const result = await bulkVerifyWords(allWords);
       if (result.success) {
-        toast.success(`Successfully verified ${result.count} words! ✨`);
+        toast.success(`Successfully processed ${result.count} words! ✨`);
         setText("");
         setDialogOpen(false);
       } else {
-        toast.error(result.error || "Failed to verify words.");
+        toast.error(result.error || "Failed to process words.");
       }
     } catch (error) {
       toast.error("An unexpected error occurred.");
@@ -94,7 +105,7 @@ export default function BulkVerifyPage() {
           <div className="space-y-1">
             <h4 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest">How it works</h4>
             <p className="text-[11px] text-white/50 leading-relaxed">
-              Paste a list of words separated by newlines or commas. This tool will identify words already in the repository and upgrade them to <span className="text-emerald-400 font-bold">Verified</span>. New words will be ignored.
+              Paste a list of words separated by whitespace. Existing words will be updated to <span className="text-emerald-400 font-bold">Verified</span>, and new words will be **automatically added** to the repository as verified.
             </p>
           </div>
         </div>
@@ -106,7 +117,7 @@ export default function BulkVerifyPage() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="KATA1, KATA2, KATA3..."
+            placeholder="KATA1 KATA2 KATA3..."
             className="w-full h-80 bg-neutral-950 border border-white/5 rounded-xl p-4 text-sm font-mono text-white/80 focus:outline-none focus:border-rose-500/50 transition-colors resize-none placeholder:text-white/5"
           />
         </div>
@@ -118,7 +129,7 @@ export default function BulkVerifyPage() {
             className="bg-emerald-500 hover:bg-emerald-600 text-black font-black uppercase tracking-widest px-8"
           >
             {isPending ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-            Preview Verification
+            Preview Action
           </Button>
         </div>
       </div>
@@ -133,9 +144,9 @@ export default function BulkVerifyPage() {
                         <ShieldCheck className="w-5 h-5 text-emerald-500" />
                     </div>
                     <div>
-                        <DialogTitle className="text-xl font-black uppercase tracking-tight">Verification Review</DialogTitle>
+                        <DialogTitle className="text-xl font-black uppercase tracking-tight">Sync & Verify Review</DialogTitle>
                         <DialogDescription className="text-[10px] text-white/60 font-black uppercase tracking-widest">
-                        Check existing tokens and missing entries
+                        Preview insertions and status updates
                         </DialogDescription>
                     </div>
                 </div>
@@ -162,31 +173,26 @@ export default function BulkVerifyPage() {
 
                 {validationResult?.newWords && validationResult.newWords.length > 0 && (
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/5 pb-2">
-                        <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/60">
-                          <AlertCircle className="w-3.5 h-3.5" /> 
-                          Ignored / Not in Repository ({validationResult.newWords.length})
+                    <div className="flex items-center justify-between border-b border-emerald-500/10 pb-2">
+                        <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                          <PlusCircle className="w-3.5 h-3.5" /> 
+                          New Words to Ingest ({validationResult.newWords.length})
                         </h4>
                     </div>
-                    <p className="text-[10px] text-white/40 italic">These words do not exist in the database and will be skipped.</p>
-                    <div className="flex flex-wrap gap-1.5 opacity-50">
+                    <p className="text-[10px] text-white/40 italic">These words are missing and will be added as Verified.</p>
+                    <div className="flex flex-wrap gap-1.5">
                     {validationResult.newWords.map((w, i) => (
-                        <div key={i} className="px-2 py-1 text-[9px] font-black font-mono bg-white/5 text-white/70 border border-white/5 rounded-lg tracking-widest leading-none">
-                        {w}
+                        <div key={i} className="group relative flex items-center gap-1.5 px-2 py-1 text-[9px] font-black font-mono bg-emerald-500/5 text-emerald-400 border border-emerald-500/10 rounded-lg tracking-widest leading-none pr-1.5">
+                          {w}
+                          <button
+                            onClick={() => handleRemoveNewWord(w)}
+                            className="p-0.5 hover:bg-emerald-500/20 rounded transition-colors"
+                            aria-label={`Remove ${w}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
                         </div>
                     ))}
-                    </div>
-                </div>
-                )}
-                
-                {validationResult?.existingWords.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white/[0.02] rounded-2xl border border-white/5 mx-2">
-                    <div className="p-3 rounded-full bg-rose-500/5 border border-rose-500/10 animate-pulse text-rose-500/20">
-                        <AlertCircle className="w-6 h-6" />
-                    </div>
-                    <div className="text-center space-y-1">
-                        <p className="text-[11px] text-white font-black tracking-widest uppercase">No Matches Found</p>
-                        <p className="text-[9px] text-white/60 font-bold px-6 italic font-mono uppercase tracking-tighter">None of your words exist in the repository yet.</p>
                     </div>
                 </div>
                 )}
@@ -198,11 +204,10 @@ export default function BulkVerifyPage() {
                 </Button>
                 <Button 
                 onClick={handleConfirmAction} 
-                disabled={isVerifying || validationResult?.existingWords.length === 0}
-                className="flex-[2] bg-emerald-500 hover:bg-emerald-400 text-black h-11 rounded-xl font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-20 uppercase tracking-[0.1em] text-[10px]"
+                className="flex-[2] bg-emerald-500 hover:bg-emerald-600 text-black h-11 rounded-xl font-black shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-20 uppercase tracking-[0.1em] text-[10px]"
                 >
                 {isVerifying ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : null}
-                {validationResult?.existingWords.length === 0 ? "Understood" : "Verify Tokens"}
+                Process & Verify
                 </Button>
             </DialogFooter>
           </div>

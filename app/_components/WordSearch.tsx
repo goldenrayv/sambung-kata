@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search, BookOpen, X, Command, Layout, Columns, Trash2, Check, ExternalLink } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { BookOpen, X, Command, Layout, Columns } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -193,9 +192,12 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               <div className="text-xl font-black text-orange-400 tracking-tighter">{wordStats.unverified.toLocaleString()}</div>
             </div>
             {/* Rejected (Hidden) Card */}
-            <div className="p-3 rounded-2xl bg-white/[0.03] border border-white/10 shadow-inner">
-              <div className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">Rejected (Hidden)</div>
-              <div className="text-xl font-black text-white/40 tracking-tighter">{wordStats.rejected.toLocaleString()}</div>
+            <div className="p-3 rounded-2xl bg-rose-500/[0.03] border border-rose-500/10 shadow-inner">
+              <div className="flex items-baseline gap-1.5 mb-1">
+                <div className="text-[9px] font-black text-rose-400/50 uppercase tracking-widest">Rejected</div>
+                <div className="text-[8px] font-black text-white/20 uppercase tracking-widest">(hidden)</div>
+              </div>
+              <div className="text-xl font-black text-rose-400/50 tracking-tighter">{wordStats.rejected.toLocaleString()}</div>
             </div>
           </div>
 

@@ -82,6 +82,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       return;
     }
 
+    // Scroll to top when search query changes
+    window.scrollTo({ top: 0, behavior: "instant" });
+
     setIsSearching(true);
 
     const timer = setTimeout(async () => {

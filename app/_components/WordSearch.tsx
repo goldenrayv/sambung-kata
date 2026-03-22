@@ -300,7 +300,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                         key={suffix}
                         onClick={() => {
                           const el = document.getElementById(`prefix-group-${suffix}`);
-                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          el?.scrollIntoView({ behavior: 'instant', block: 'center' });
                         }}
                         className="flex items-center justify-center px-2 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[9px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
                       >

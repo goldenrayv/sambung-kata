@@ -334,7 +334,12 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
                   <div className="flex items-center justify-between gap-2 px-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{suffix.toUpperCase()}</span>
+                      <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">
+                        {suffix.toUpperCase()}
+                        <span className="text-[10px] ml-2 opacity-50 font-medium uppercase tracking-widest italic">
+                          ({groupedPrefix[suffix].words.length} words{prefixData.hasMore && suffix === sortedPrefixSuffixes[sortedPrefixSuffixes.length - 1] ? ", and more" : ""})
+                        </span>
+                      </span>
                       <div className="h-[1px] w-12 bg-orange-500/10" />
                     </div>
                   </div>

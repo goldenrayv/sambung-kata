@@ -54,21 +54,23 @@ export async function GET(req: Request) {
       prisma.word.findMany({
         where: { ...baseWhere, OR: suffixOR },
         select: { id: true, word: true, isVerified: true },
-        take: LIMIT,
+        // No take limit here — ALL tactical suffix matches come first
         orderBy: { word: "asc" },
       }),
     ]);
 
     let results = strategicResults;
 
-    if (results.length < LIMIT) {
+    // Fill remaining slots (up to LIMIT) with non-tactical-suffix words
+    const remaining = LIMIT - results.length;
+    if (remaining > 0) {
       const otherResults = await prisma.word.findMany({
         where: {
           ...baseWhere,
           NOT: suffixOR,
         },
         select: { id: true, word: true, isVerified: true },
-        take: LIMIT - results.length,
+        take: remaining,
         orderBy: { word: "asc" },
       });
       results = [...results, ...otherResults];

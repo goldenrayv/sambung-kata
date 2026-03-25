@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
   if (!q) return NextResponse.json([]);
 
-  const LIMIT = 2500;
+  const LIMIT = 1000;
 
   if (mode === "prefix") {
     const ALL_MAGIC = await getTacticalSuffixes();

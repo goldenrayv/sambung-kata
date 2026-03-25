@@ -94,7 +94,7 @@ export async function insertBulkWords(words: string[]) {
     const uppercaseWords = Array.from(new Set(words.map(word => word.toUpperCase().trim()).filter(Boolean)));
     
     // Batch processing to avoid payload limits/timeouts in production
-    const BATCH_SIZE = 2500;
+    const BATCH_SIZE = 1000;
     for (let i = 0; i < uppercaseWords.length; i += BATCH_SIZE) {
       const batch = uppercaseWords.slice(i, i + BATCH_SIZE);
       await prisma.word.createMany({

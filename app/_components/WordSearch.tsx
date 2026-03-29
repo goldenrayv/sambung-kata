@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -22,6 +22,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [suffixData, setSuffixData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
   const [isSearching, setIsSearching] = useState(false);
   const [showSuffix, setShowSuffix] = useState(true);
+  const [isTestingMode, setIsTestingMode] = useState(false);
 
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
@@ -94,11 +95,11 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
       try {
         const [pRes, sRes] = await Promise.all([
-          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix`, {
+          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix&status=${isTestingMode ? 'testing' : 'all'}`, {
             headers: { Authorization: `Bearer ${userId}` },
             signal,
           }),
-          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix`, {
+          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix&status=${isTestingMode ? 'testing' : 'all'}`, {
             headers: { Authorization: `Bearer ${userId}` },
             signal,
           }),
@@ -119,7 +120,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [search, userId]);
+  }, [search, userId, isTestingMode]);
 
 
   const groupedPrefix = useMemo(() =>
@@ -220,6 +221,18 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                   }`}
                 >
                   {showSuffix ? <Columns className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
+                </button>
+
+                <button
+                  onClick={() => setIsTestingMode(!isTestingMode)}
+                  title={isTestingMode ? "Testing Mode: Only Unverified Words" : "Normal Mode: All Words"}
+                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                    isTestingMode
+                      ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
+                      : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                  }`}
+                >
+                  <Beaker className="w-4 h-4" />
                 </button>
 
                 <input

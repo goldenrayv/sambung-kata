@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = (searchParams.get("q") ?? "").trim();
   const mode = searchParams.get("mode") ?? "prefix";
+  const statusFilter = searchParams.get("status");
 
   if (!q) return NextResponse.json([]);
 
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
 
     const baseWhere = {
       isActive: true,
-      isVerified: { not: "rejected" },
+      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
       word: { startsWith: q, mode: "insensitive" as const },
     };
 
@@ -82,7 +83,7 @@ export async function GET(req: Request) {
   // Suffix mode (or fallback) remains original — just alphabetical
   const whereClause = {
     isActive: true,
-    isVerified: { not: "rejected" },
+    isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
     word: mode === "suffix"
       ? { endsWith: q, mode: "insensitive" as const }
       : { contains: q, mode: "insensitive" as const }

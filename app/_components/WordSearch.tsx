@@ -154,6 +154,10 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       const groupA = groupedPrefix[a];
       const groupB = groupedPrefix[b];
       if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
+      
+      if (a.length !== b.length) {
+        return b.length - a.length;
+      }
       return a.localeCompare(b);
     }),
   [groupedPrefix]);

@@ -34,7 +34,7 @@ export default function WordCard({ word, search = "", searchMode = "prefix", isS
       }`}
     >
       <span
-        className={`truncate min-w-0 text-[11px] tracking-widest transition-colors uppercase ${isVerified === "verified"
+        className={`break-all whitespace-normal text-[11px] tracking-widest transition-colors uppercase ${isVerified === "verified"
           ? "text-emerald-400 font-black"
           : cue 
             ? "text-orange-100 font-extrabold"

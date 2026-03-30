@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-let cachedSuffixes: string[] | null = null;
-
 async function getTacticalSuffixes(): Promise<string[]> {
-  if (!cachedSuffixes) {
-    const rows = await prisma.tacticalSuffix.findMany({ select: { suffix: true } });
-    cachedSuffixes = rows.map((r) => r.suffix);
-  }
-  return cachedSuffixes;
+  const rows = await prisma.tacticalSuffix.findMany({ select: { suffix: true } });
+  return rows.map((r) => r.suffix);
 }
 
 export async function GET(req: Request) {

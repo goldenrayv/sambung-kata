@@ -360,7 +360,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                       <div className="h-[1px] w-12 bg-orange-500/10" />
                     </div>
                   </div>
-                  <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2 content-start`}>
+                  <div className={`flex flex-wrap gap-2 content-start`}>
                     {groupedPrefix[suffix].words.map((wordObj: any) => (
                       <WordCard 
                         key={wordObj.id} 
@@ -427,7 +427,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                       <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
                       <div className="h-[1px] flex-1 bg-orange-500/10" />
                     </div>
-                    <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 ${!showSuffix ? "xl:grid-cols-6 2xl:grid-cols-8" : "xl:grid-cols-3"} gap-2`}>
+                    <div className={`flex flex-wrap gap-2 content-start`}>
                       {groupedSuffix[letter].map((wordObj: any) => (
                         <WordCard 
                           key={wordObj.id} 

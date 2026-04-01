@@ -319,9 +319,10 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                           const el = document.getElementById(`prefix-group-${suffix}`);
                           el?.scrollIntoView({ behavior: 'instant', block: 'center' });
                         }}
-                        className="flex items-center justify-center px-2 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[9px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
+                        className="flex items-center gap-1.5 px-2 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[9px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
                       >
                         {suffix}
+                        <span className="opacity-50 font-medium">{groupedPrefix[suffix].words.length}</span>
                       </button>
                     ))}
                   </div>

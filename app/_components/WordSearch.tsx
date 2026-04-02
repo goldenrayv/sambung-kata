@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -23,14 +23,21 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [isSearching, setIsSearching] = useState(false);
   const [showSuffix, setShowSuffix] = useState(true);
   const [isTestingMode, setIsTestingMode] = useState(false);
+  const [isBlockMode, setIsBlockMode] = useState(false);
+  const [hideRisky, setHideRisky] = useState(false);
+  // Stores tactical suffix strings to block, e.g. "TIF", "IF"
+  const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
+  // First 1-3 chars of all words ending with any blocked suffix — the "danger openings"
+  const [dangerousTails, setDangerousTails] = useState<Set<string>>(new Set());
+  const [isDangerousLoading, setIsDangerousLoading] = useState(false);
 
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isSearchFocused = document.activeElement === searchInputRef.current;
-      
+
       if (
-        (e.key === "Tab" && !isSearchFocused) || 
+        (e.key === "Tab" && !isSearchFocused) ||
         ((e.metaKey || e.ctrlKey) && e.key === "k")
       ) {
         e.preventDefault();
@@ -42,14 +49,55 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Build dangerousTails whenever blockedSuffixes changes.
+  // Fetch words ending with each blocked suffix, then collect their first 1-3 chars.
+  // If my played word ends with any of those chars, the opponent can start there and
+  // chain into a word ending with the blocked suffix.
+  useEffect(() => {
+    if (blockedSuffixes.size === 0) {
+      setDangerousTails(new Set());
+      return;
+    }
+
+    setIsDangerousLoading(true);
+
+    Promise.all(
+      Array.from(blockedSuffixes).map(suffix =>
+        fetch(`/api/search?q=${encodeURIComponent(suffix)}&mode=suffix&status=all`, {
+          headers: { Authorization: `Bearer ${userId}` },
+        }).then(r => r.ok ? r.json() : { results: [] })
+      )
+    ).then(allData => {
+      const tails = new Set<string>();
+      for (const data of allData) {
+        for (const wordObj of data.results) {
+          const word = (wordObj.word || wordObj).toUpperCase();
+          if (word.length >= 2) tails.add(word.slice(0, 2));
+          if (word.length >= 3) tails.add(word.slice(0, 3));
+        }
+      }
+      setDangerousTails(tails);
+    }).finally(() => setIsDangerousLoading(false));
+  }, [blockedSuffixes, userId]);
+
+  // A word is risky if its last 1-3 chars match any dangerous tail (= a prefix of a blocked-suffix word).
+  const isWordRisky = (word: string): boolean => {
+    if (dangerousTails.size === 0) return false;
+    const w = word.toUpperCase();
+    const len = w.length;
+    return (
+      (len >= 2 && dangerousTails.has(w.slice(-2))) ||
+      (len >= 3 && dangerousTails.has(w.slice(-3)))
+    );
+  };
+
   const handleVerifyWord = async (id: string, currentStatus?: string) => {
-    if (currentStatus === "verified") return; 
-    
+    if (currentStatus === "verified") return;
+
     const result = await toggleWordVerification(id, "unverified");
     if (result.success) {
       toast.success("Word verified! ✨");
-      // Update local state for immediate feedback
-      const updateList = (list: any[]) => list.map(item => 
+      const updateList = (list: any[]) => list.map(item =>
         item.id === id ? { ...item, isVerified: "verified" } : item
       );
       setPrefixData(prev => ({ ...prev, results: updateList(prev.results) }));
@@ -64,7 +112,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     const result = await deleteWord(id);
     if (result.success) {
       toast.success("Word rejected (Soft Deleted)");
-      // Update local state for immediate feedback
       const filterList = (list: any[]) => list.filter(item => item.id !== id);
       setPrefixData(prev => ({ ...prev, results: filterList(prev.results), totalCount: prev.totalCount - 1 }));
       setSuffixData(prev => ({ ...prev, results: filterList(prev.results), totalCount: prev.totalCount - 1 }));
@@ -83,9 +130,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       return;
     }
 
-    // Scroll to top when search query changes
     window.scrollTo({ top: 0, behavior: "instant" });
-
     setIsSearching(true);
 
     const timer = setTimeout(async () => {
@@ -155,10 +200,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       const groupA = groupedPrefix[a];
       const groupB = groupedPrefix[b];
       if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
-      
-      if (a.length !== b.length) {
-        return b.length - a.length;
-      }
+      if (a.length !== b.length) return b.length - a.length;
       return a.localeCompare(b);
     }),
   [groupedPrefix]);
@@ -176,7 +218,14 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const sortedSuffixLetters = useMemo(() =>
     Object.keys(groupedSuffix).sort(),
   [groupedSuffix]);
-  
+
+  const riskyWordCount = useMemo(() =>
+    dangerousTails.size > 0
+      ? prefixData.results.filter((w: any) => isWordRisky(w.word || w)).length
+      : 0,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [prefixData.results, dangerousTails]);
+
   return (
     <div className="w-full relative z-10 pb-20">
 
@@ -235,6 +284,21 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                   <Beaker className="w-4 h-4" />
                 </button>
 
+                <button
+                  onClick={() => {
+                    setIsBlockMode(!isBlockMode);
+                    if (isBlockMode) setBlockedSuffixes(new Set());
+                  }}
+                  title={isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF — click to enable, then tap suffixes above to block"}
+                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                    isBlockMode
+                      ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
+                      : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                  }`}
+                >
+                  <ShieldOff className="w-4 h-4" />
+                </button>
+
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -263,17 +327,41 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </div>
           </div>
 
-          {/* Suffix chips */}
+          {/* Suffix chips — in block mode, clicking blocks that suffix instead of searching */}
           <div className="flex flex-wrap gap-2">
-            {tacticalSuffixes.map((ts) => (
-              <button
-                key={ts.id}
-                onClick={() => setSearch(ts.suffix)}
-                className="px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/30 text-[10px] font-black text-sky-400 hover:bg-sky-500 hover:text-white transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter"
-              >
-                -{ts.suffix}
-              </button>
-            ))}
+            {isBlockMode && (
+              <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center">
+                Block:
+              </span>
+            )}
+            {tacticalSuffixes.map((ts) => {
+              const isBlocked = blockedSuffixes.has(ts.suffix);
+              return (
+                <button
+                  key={ts.id}
+                  onClick={() => {
+                    if (isBlockMode) {
+                      setBlockedSuffixes(prev => {
+                        const next = new Set(prev);
+                        isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
+                        return next;
+                      });
+                    } else {
+                      setSearch(ts.suffix);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
+                    isBlocked
+                      ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
+                      : isBlockMode
+                        ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
+                        : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
+                  }`}
+                >
+                  -{ts.suffix}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -290,6 +378,12 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             <div className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(251,146,60,0.5)]" />
             <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">Unverified</span>
           </div>
+          {dangerousTails.size > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">Risky</span>
+            </div>
+          )}
         </div>
 
         <div className={`grid grid-cols-1 ${showSuffix ? "lg:grid-cols-2" : ""} gap-6 items-start min-h-[60vh]`}>
@@ -303,7 +397,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                   <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[10px] font-black tracking-widest uppercase">Full Width</Badge>
                 )}
               </div>
-              
+
               <div className="min-h-[32px] flex items-center">
                 {isSearching ? (
                   <div className="flex items-center gap-2 animate-pulse">
@@ -336,6 +430,26 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-inner font-mono">&quot;{search}&quot;</span>
               </div>
               <div className="flex items-center gap-2">
+                {isDangerousLoading && (
+                  <span className="text-[9px] font-black text-rose-400/60 uppercase tracking-widest animate-pulse">Analyzing...</span>
+                )}
+                {!isDangerousLoading && riskyWordCount > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-black text-rose-400/80 uppercase tracking-widest">{riskyWordCount} risky</span>
+                    <button
+                      onClick={() => setHideRisky(!hideRisky)}
+                      className={`text-[9px] font-black uppercase tracking-widest underline transition-colors ${hideRisky ? "text-rose-400" : "text-rose-400/60 hover:text-rose-400"}`}
+                    >
+                      {hideRisky ? "Show" : "Hide"}
+                    </button>
+                    <button
+                      onClick={() => setBlockedSuffixes(new Set())}
+                      className="text-[9px] font-black text-rose-400/60 hover:text-rose-400 uppercase tracking-widest underline transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
                 <span className="text-[10px] font-black text-orange-400/60 uppercase tracking-widest">{prefixData.totalCount.toLocaleString()} TOTAL</span>
                 {prefixData.hasMore && (
                   <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[9px] font-black animate-pulse">
@@ -361,19 +475,26 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                       <div className="h-[1px] w-12 bg-orange-500/10" />
                     </div>
                   </div>
-                  <div className={`flex flex-wrap gap-2 content-start`}>
-                    {groupedPrefix[suffix].words.map((wordObj: any) => (
-                      <WordCard 
-                        key={wordObj.id} 
-                        word={wordObj.word} 
-                        search={search} 
-                        searchMode="prefix" 
-                        isSuperUser={isSuperUser}
-                        isVerified={wordObj.isVerified}
-                        onAccept={isSuperUser ? () => handleVerifyWord(wordObj.id, wordObj.isVerified) : undefined}
-                        onDelete={isSuperUser ? () => handleDeleteWord(wordObj.id) : undefined}
-                      />
-                    ))}
+                  <div className="flex flex-wrap gap-2 content-start">
+                    {groupedPrefix[suffix].words.filter((wordObj: any) => !(hideRisky && isWordRisky(wordObj.word))).map((wordObj: any) => {
+                      const risky = isWordRisky(wordObj.word);
+                      return (
+                        <div
+                          key={wordObj.id}
+                          className={risky ? "rounded-lg ring-1 ring-rose-500/50 shadow-[0_0_8px_rgba(244,63,94,0.15)]" : ""}
+                        >
+                          <WordCard
+                            word={wordObj.word}
+                            search={search}
+                            searchMode="prefix"
+                            isSuperUser={isSuperUser}
+                            isVerified={wordObj.isVerified}
+                            onAccept={isSuperUser ? () => handleVerifyWord(wordObj.id, wordObj.isVerified) : undefined}
+                            onDelete={isSuperUser ? () => handleDeleteWord(wordObj.id) : undefined}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))
@@ -399,7 +520,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 <div className="flex items-center gap-3 h-10 pt-2">
                   <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">SUFFIX</h2>
                 </div>
-                
+
                 {/* Empty spacer for alignment with Prefix navigation letters */}
                 <div className="min-h-[32px]" />
               </div>
@@ -430,11 +551,11 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     </div>
                     <div className={`flex flex-wrap gap-2 content-start`}>
                       {groupedSuffix[letter].map((wordObj: any) => (
-                        <WordCard 
-                          key={wordObj.id} 
-                          word={wordObj.word} 
-                          search={search} 
-                          searchMode="suffix" 
+                        <WordCard
+                          key={wordObj.id}
+                          word={wordObj.word}
+                          search={search}
+                          searchMode="suffix"
                           isSuperUser={isSuperUser}
                           isVerified={wordObj.isVerified}
                           onAccept={isSuperUser ? () => handleVerifyWord(wordObj.id, wordObj.isVerified) : undefined}

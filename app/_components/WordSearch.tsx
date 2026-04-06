@@ -173,7 +173,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [search, userId, isTestingMode]);

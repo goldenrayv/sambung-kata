@@ -1,9 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// --- Module-level caches to avoid repeated DB round-trips on every search ---
+const suffixCache = { data: null as string[] | null, ts: 0 };
+const SUFFIX_TTL = 5 * 60 * 1000; // 5 min
+
 async function getTacticalSuffixes(): Promise<string[]> {
+  if (suffixCache.data && Date.now() - suffixCache.ts < SUFFIX_TTL) {
+    return suffixCache.data;
+  }
   const rows = await prisma.tacticalSuffix.findMany({ select: { suffix: true } });
-  return rows.map((r) => r.suffix);
+  suffixCache.data = rows.map((r) => r.suffix);
+  suffixCache.ts = Date.now();
+  return suffixCache.data;
+}
+
+const userCache = new Map<string, { expiresAt: Date; cachedAt: number }>();
+const USER_TTL = 60 * 1000; // 1 min
+
+async function getValidUser(userId: string) {
+  const cached = userCache.get(userId);
+  if (cached && Date.now() - cached.cachedAt < USER_TTL) {
+    return cached.expiresAt > new Date() ? cached : null;
+  }
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { expiresAt: true } });
+  if (user) userCache.set(userId, { expiresAt: user.expiresAt, cachedAt: Date.now() });
+  return user;
 }
 
 export async function GET(req: Request) {
@@ -15,9 +37,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
+  const user = await getValidUser(userId);
 
   if (!user || user.expiresAt < new Date()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,26 +65,20 @@ export async function GET(req: Request) {
       word: { startsWith: q, mode: "insensitive" as const },
     };
 
-    const [totalCount, strategicResults] = await Promise.all([
-      prisma.word.count({ where: baseWhere }),
-      prisma.word.findMany({
-        where: { ...baseWhere, OR: suffixOR },
-        select: { id: true, word: true, isVerified: true },
-        // No take limit here — ALL tactical suffix matches come first
-        orderBy: { word: "asc" },
-      }),
-    ]);
+    // Fetch strategic results + one extra to detect hasMore without a count query
+    const strategicResults = await prisma.word.findMany({
+      where: { ...baseWhere, OR: suffixOR },
+      select: { id: true, word: true, isVerified: true },
+      orderBy: { word: "asc" },
+    });
 
     let results = strategicResults;
 
-    // Fill remaining slots (up to LIMIT) with non-tactical-suffix words
-    const remaining = LIMIT - results.length;
+    // Fill remaining slots (up to LIMIT+1) with non-tactical-suffix words
+    const remaining = LIMIT + 1 - results.length;
     if (remaining > 0) {
       const otherResults = await prisma.word.findMany({
-        where: {
-          ...baseWhere,
-          NOT: suffixOR,
-        },
+        where: { ...baseWhere, NOT: suffixOR },
         select: { id: true, word: true, isVerified: true },
         take: remaining,
         orderBy: { word: "asc" },
@@ -72,10 +86,13 @@ export async function GET(req: Request) {
       results = [...results, ...otherResults];
     }
 
-    return NextResponse.json({ results, totalCount, hasMore: totalCount > LIMIT });
+    const hasMore = results.length > LIMIT;
+    if (hasMore) results = results.slice(0, LIMIT);
+
+    return NextResponse.json({ results, totalCount: results.length, hasMore });
   }
 
-  // Suffix mode (or fallback) remains original — just alphabetical
+  // Suffix mode — fetch LIMIT+1 to detect hasMore without a count query
   const whereClause = {
     isActive: true,
     isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
@@ -84,19 +101,19 @@ export async function GET(req: Request) {
       : { contains: q, mode: "insensitive" as const }
   };
 
-  const [results, totalCount] = await Promise.all([
-    prisma.word.findMany({
-      where: whereClause,
-      select: { id: true, word: true, isVerified: true },
-      take: LIMIT,
-      orderBy: { word: "asc" },
-    }),
-    prisma.word.count({ where: whereClause })
-  ]);
+  const results = await prisma.word.findMany({
+    where: whereClause,
+    select: { id: true, word: true, isVerified: true },
+    take: LIMIT + 1,
+    orderBy: { word: "asc" },
+  });
+
+  const hasMore = results.length > LIMIT;
+  const finalResults = hasMore ? results.slice(0, LIMIT) : results;
 
   return NextResponse.json({
-    results,
-    totalCount,
-    hasMore: totalCount > LIMIT
+    results: finalResults,
+    totalCount: finalResults.length,
+    hasMore,
   });
 }

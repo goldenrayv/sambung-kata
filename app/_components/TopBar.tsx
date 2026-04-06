@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Info, BookOpen, Sparkles, AlertCircle, X, ArrowUpRight, ShieldCheck, BadgeCheck } from "lucide-react";
+import { LogOut, Info, BookOpen, Sparkles, AlertCircle, X, ArrowUpRight, ShieldCheck, BadgeCheck, ShieldOff } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,16 @@ export default function TopBar({ username, isSuperUser, expiresAt, onLogout }: P
                 </div>
                 <p className="text-[11px] leading-relaxed text-white/60">
                   Look for <span className="text-emerald-400 font-black italic">Emerald</span> highlighted cards. These are curated, professional-grade words guaranteed to be valid in competitive play.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-rose-300 uppercase tracking-tighter">
+                  <ShieldOff className="w-3 h-3" />
+                  Strategy Block
+                </div>
+                <p className="text-[11px] leading-relaxed text-white/60">
+                  Hit the <span className="text-white font-mono">Shield</span> button, then tap a suffix chip (e.g. <span className="text-white font-mono">-TIF</span>) to block it. Words in your prefix results with a <span className="text-rose-400 font-black">rose ring</span> are dangerous — their last 2–3 letters give the opponent an opening into your blocked suffix. Use <span className="text-white font-mono">Hide</span> to only show safe words.
                 </p>
               </div>
 

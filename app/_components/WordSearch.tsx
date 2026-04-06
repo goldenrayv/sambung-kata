@@ -27,6 +27,10 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [hideRisky, setHideRisky] = useState(false);
   // Stores tactical suffix strings to block, e.g. "TIF", "IF"
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("sk_search_history") || "[]"); } catch { return []; }
+  });
   // First 1-3 chars of all words ending with any blocked suffix — the "danger openings"
   const [dangerousTails, setDangerousTails] = useState<Set<string>>(new Set());
   const [isDangerousLoading, setIsDangerousLoading] = useState(false);
@@ -154,6 +158,13 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
           const [pData, sData] = await Promise.all([pRes.json(), sRes.json()]);
           setPrefixData(pData);
           setSuffixData(sData);
+          if (pData.totalCount > 0 || sData.totalCount > 0) {
+            setSearchHistory(prev => {
+              const next = [search.trim(), ...prev.filter(h => h !== search.trim())].slice(0, 8);
+              localStorage.setItem("sk_search_history", JSON.stringify(next));
+              return next;
+            });
+          }
         }
       } catch (error: unknown) {
         if (error instanceof Error && error.name !== "AbortError") {
@@ -362,7 +373,31 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 </button>
               );
             })}
-          </div>
+            {/* Search history */}
+          {searchHistory.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Recent:</span>
+              {searchHistory.map(h => (
+                <button
+                  key={h}
+                  onClick={() => setSearch(h)}
+                  className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-white hover:border-white/30 transition-all uppercase tracking-wider"
+                >
+                  {h}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setSearchHistory([]);
+                  localStorage.removeItem("sk_search_history");
+                }}
+                className="text-[9px] font-black text-white/20 hover:text-rose-400 transition-colors uppercase tracking-widest"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
         </div>
       </div>
 

@@ -23,7 +23,8 @@ export default function Home() {
     const savedExpiry = localStorage.getItem("sk_expires_at");
 
     const savedSuper = localStorage.getItem("sk_is_superuser") === "true";
-    if (savedId && savedUsername && savedExpiry) {
+    const isExpired = savedExpiry ? new Date(savedExpiry) < new Date() : true;
+    if (savedId && savedUsername && savedExpiry && !isExpired) {
       setUser({ 
         id: savedId, 
         username: savedUsername, 
@@ -34,6 +35,12 @@ export default function Home() {
       fetchInitialData();
       setLoading(false);
     } else {
+      if (isExpired) {
+        localStorage.removeItem("sk_user_id");
+        localStorage.removeItem("sk_username");
+        localStorage.removeItem("sk_expires_at");
+        localStorage.removeItem("sk_is_superuser");
+      }
       setIsAuthenticated(false);
       setLoading(false);
     }

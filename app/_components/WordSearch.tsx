@@ -230,6 +230,19 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     Object.keys(groupedSuffix).sort(),
   [groupedSuffix]);
 
+  const VOWELS = new Set(["A", "E", "I", "O", "U"]);
+
+  function getSuffixBadgeClass(suffixKey: string): string {
+    const letters = suffixKey.replace(/^-/, "").toUpperCase();
+    if (letters.length === 2) {
+      const allVowels = [...letters].every(c => VOWELS.has(c));
+      const allConsonants = [...letters].every(c => !VOWELS.has(c));
+      if (allVowels)     return "bg-teal-500/10 border-teal-500/20 text-teal-400 hover:bg-teal-500 hover:text-white";
+      if (allConsonants) return "bg-violet-500/10 border-violet-500/20 text-violet-400 hover:bg-violet-500 hover:text-white";
+    }
+    return "bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500 hover:text-white";
+  }
+
   const riskyWordCount = useMemo(() =>
     dangerousTails.size > 0
       ? prefixData.results.filter((w: any) => isWordRisky(w.word || w)).length
@@ -448,7 +461,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                           const el = document.getElementById(`prefix-group-${suffix}`);
                           el?.scrollIntoView({ behavior: 'instant', block: 'center' });
                         }}
-                        className="flex items-center gap-1.5 px-2 h-6 rounded bg-orange-500/10 border border-orange-500/20 text-[9px] font-black text-orange-400 hover:bg-orange-500 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer uppercase"
+                        className={`flex items-center gap-1.5 px-2 h-6 rounded border text-[9px] font-black transition-all duration-200 active:scale-95 cursor-pointer uppercase ${getSuffixBadgeClass(suffix)}`}
                       >
                         {suffix}
                         <span className="opacity-50 font-medium">{groupedPrefix[suffix].words.length}</span>

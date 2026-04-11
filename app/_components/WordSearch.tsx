@@ -508,7 +508,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </div>
           </div>
 
-          <div className="space-y-10">
+          <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
             {sortedPrefixSuffixes.length > 0 ? (
               sortedPrefixSuffixes.map((suffix) => (
                 <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
@@ -589,7 +589,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             </div>
 
-            <div className="space-y-10">
+            <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {sortedSuffixLetters.length > 0 ? (
                 sortedSuffixLetters.map((letter) => (
                   <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">

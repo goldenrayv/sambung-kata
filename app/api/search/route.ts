@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 
   // --- Search ---
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get("q") ?? "").trim();
+  const q = (searchParams.get("q") ?? "").trim().toUpperCase();
   const mode = searchParams.get("mode") ?? "prefix";
   const statusFilter = searchParams.get("status");
 
@@ -56,13 +56,13 @@ export async function GET(req: Request) {
   if (mode === "prefix") {
     const ALL_MAGIC = await getTacticalSuffixes();
     const suffixOR = ALL_MAGIC.length > 0
-      ? ALL_MAGIC.map(s => ({ word: { endsWith: s, mode: "insensitive" as const } }))
+      ? ALL_MAGIC.map(s => ({ word: { endsWith: s, mode: "default" as const } }))
       : undefined;
 
     const baseWhere = {
       isActive: true,
       isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-      word: { startsWith: q, mode: "insensitive" as const },
+      word: { startsWith: q, mode: "default" as const },
     };
 
     // Fetch strategic results + one extra to detect hasMore without a count query
@@ -97,8 +97,8 @@ export async function GET(req: Request) {
     isActive: true,
     isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
     word: mode === "suffix"
-      ? { endsWith: q, mode: "insensitive" as const }
-      : { contains: q, mode: "insensitive" as const }
+      ? { endsWith: q, mode: "default" as const }
+      : { contains: q, mode: "default" as const }
   };
 
   const results = await prisma.word.findMany({

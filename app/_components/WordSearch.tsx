@@ -137,43 +137,38 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     window.scrollTo({ top: 0, behavior: "instant" });
     setIsSearching(true);
 
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       abortRef.current?.abort();
       abortRef.current = new AbortController();
       const { signal } = abortRef.current;
 
-      try {
-        const [pRes, sRes] = await Promise.all([
-          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=prefix&status=${isTestingMode ? 'testing' : 'all'}`, {
-            headers: { Authorization: `Bearer ${userId}` },
-            signal,
-          }),
-          fetch(`/api/search?q=${encodeURIComponent(search.trim())}&mode=suffix&status=${isTestingMode ? 'testing' : 'all'}`, {
-            headers: { Authorization: `Bearer ${userId}` },
-            signal,
-          }),
-        ]);
+      const q = encodeURIComponent(search.trim());
+      const status = isTestingMode ? 'testing' : 'all';
+      const headers = { Authorization: `Bearer ${userId}` };
 
-        if (pRes.ok && sRes.ok) {
-          const [pData, sData] = await Promise.all([pRes.json(), sRes.json()]);
+      // Fetch prefix and suffix independently — render each as soon as it arrives
+      // so prefix results don't wait on the slower suffix query.
+      fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
+        .then(r => r.ok ? r.json() : null)
+        .then(pData => {
+          if (!pData) return;
           setPrefixData(pData);
-          setSuffixData(sData);
-          if (pData.totalCount > 0 || sData.totalCount > 0) {
+          setIsSearching(false);
+          if (pData.totalCount > 0) {
             setSearchHistory(prev => {
               const next = [search.trim(), ...prev.filter(h => h !== search.trim())].slice(0, 8);
               localStorage.setItem("sk_search_history", JSON.stringify(next));
               return next;
             });
           }
-        }
-      } catch (error: unknown) {
-        if (error instanceof Error && error.name !== "AbortError") {
-          console.error("Search failed:", error);
-        }
-      } finally {
-        setIsSearching(false);
-      }
-    }, 150);
+        })
+        .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+
+      fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
+        .then(r => r.ok ? r.json() : null)
+        .then(sData => { if (sData) setSuffixData(sData); })
+        .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+    }, 100);
 
     return () => clearTimeout(timer);
   }, [search, userId, isTestingMode]);

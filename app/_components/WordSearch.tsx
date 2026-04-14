@@ -25,6 +25,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [isTestingMode, setIsTestingMode] = useState(false);
   const [isBlockMode, setIsBlockMode] = useState(false);
   const [hideRisky, setHideRisky] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
   // Stores tactical suffix strings to block, e.g. "TIF", "IF"
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
@@ -254,22 +255,22 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
       {/* Stats — 4 cards, centered, scrolls with page */}
       <div className="flex justify-center py-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-white/[0.03] border border-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-            <div className="text-[8px] font-black text-white/30 uppercase tracking-[0.4em]">Total</div>
-            <div className="text-3xl font-black text-white tracking-tighter leading-none">{(wordStats.verified + wordStats.unverified + wordStats.rejected).toLocaleString()}</div>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
+            <div className="text-[7px] lg:text-[8px] font-black text-white/30 uppercase tracking-widest">Total</div>
+            <div className="text-lg lg:text-3xl font-black text-white tracking-tighter leading-none">{(wordStats.verified + wordStats.unverified + wordStats.rejected).toLocaleString()}</div>
           </div>
-          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/[0.12] shadow-[inset_0_1px_0_rgba(16,185,129,0.05)]">
-            <div className="text-[8px] font-black text-emerald-400/60 uppercase tracking-[0.4em]">Verified</div>
-            <div className="text-3xl font-black text-emerald-400 tracking-tighter leading-none">{wordStats.verified.toLocaleString()}</div>
+          <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/[0.12]">
+            <div className="text-[7px] lg:text-[8px] font-black text-emerald-400/60 uppercase tracking-widest">Verified</div>
+            <div className="text-lg lg:text-3xl font-black text-emerald-400 tracking-tighter leading-none">{wordStats.verified.toLocaleString()}</div>
           </div>
-          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-orange-500/[0.04] border border-orange-500/[0.12] shadow-[inset_0_1px_0_rgba(251,146,60,0.05)]">
-            <div className="text-[8px] font-black text-orange-400/60 uppercase tracking-[0.4em]">Unverified</div>
-            <div className="text-3xl font-black text-orange-400 tracking-tighter leading-none">{wordStats.unverified.toLocaleString()}</div>
+          <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-orange-500/[0.04] border border-orange-500/[0.12]">
+            <div className="text-[7px] lg:text-[8px] font-black text-orange-400/60 uppercase tracking-widest">Unverified</div>
+            <div className="text-lg lg:text-3xl font-black text-orange-400 tracking-tighter leading-none">{wordStats.unverified.toLocaleString()}</div>
           </div>
-          <div className="flex flex-col items-center gap-1.5 px-8 py-5 rounded-2xl bg-rose-500/[0.03] border border-rose-500/[0.08] shadow-[inset_0_1px_0_rgba(244,63,94,0.04)]">
-            <div className="text-[8px] font-black text-rose-400/40 uppercase tracking-[0.4em]">Rejected</div>
-            <div className="text-3xl font-black text-rose-400/50 tracking-tighter leading-none">{wordStats.rejected.toLocaleString()}</div>
+          <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-rose-500/[0.03] border border-rose-500/[0.08]">
+            <div className="text-[7px] lg:text-[8px] font-black text-rose-400/40 uppercase tracking-widest">Rejected</div>
+            <div className="text-lg lg:text-3xl font-black text-rose-400/50 tracking-tighter leading-none">{wordStats.rejected.toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -352,9 +353,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
       {/* Suffix chips + search history — scrolls with page */}
       <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide lg:flex-wrap lg:overflow-visible lg:pb-0">
           {isBlockMode && (
-            <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center">
+            <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center shrink-0">
               Block:
             </span>
           )}
@@ -374,7 +375,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     setSearch(ts.suffix);
                   }
                 }}
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
+                className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
                   isBlocked
                     ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
                     : isBlockMode
@@ -413,9 +414,35 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         )}
       </div>
 
-      <div className="mt-8 border-t border-white/5 pt-8">
-        {/* Legend — Top, horizontal centered */}
-        <div className="flex items-center justify-center gap-6 mb-8 py-3 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.05] w-fit mx-auto">
+      <div className="mt-4 border-t border-white/5 pt-4">
+        {/* Mobile tab switcher — hidden on desktop */}
+        {showSuffix && (
+          <div className="flex lg:hidden gap-2 mb-4">
+            <button
+              onClick={() => setMobileTab("prefix")}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                mobileTab === "prefix"
+                  ? "bg-orange-500/20 border border-orange-500/40 text-orange-400"
+                  : "bg-white/5 border border-white/10 text-white/40"
+              }`}
+            >
+              Prefix <span className="opacity-60">{prefixData.totalCount > 0 ? prefixData.totalCount.toLocaleString() : ""}</span>
+            </button>
+            <button
+              onClick={() => setMobileTab("suffix")}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all ${
+                mobileTab === "suffix"
+                  ? "bg-orange-500/20 border border-orange-500/40 text-orange-400"
+                  : "bg-white/5 border border-white/10 text-white/40"
+              }`}
+            >
+              Suffix <span className="opacity-60">{suffixData.totalCount > 0 ? suffixData.totalCount.toLocaleString() : ""}</span>
+            </button>
+          </div>
+        )}
+
+        {/* Legend — hidden on mobile to save space */}
+        <div className="hidden lg:flex items-center justify-center gap-6 mb-8 py-3 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.05] w-fit mx-auto">
           <div className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Status Legend</div>
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -435,11 +462,11 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
         <div className={`grid grid-cols-1 ${showSuffix ? "lg:grid-cols-2" : ""} gap-6 items-start min-h-[60vh]`}>
         {/* Prefix Container */}
-        <div className={`space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] transition-all duration-500 flex-1 ${!showSuffix ? "col-span-full" : ""}`}>
-          <div className="flex flex-col border-b border-orange-500/10 pb-4 h-44 px-1">
+        <div className={`space-y-6 p-4 lg:p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] transition-all duration-500 flex-1 ${!showSuffix ? "col-span-full" : ""} ${showSuffix && mobileTab !== "prefix" ? "hidden lg:block" : ""}`}>
+          <div className="flex flex-col border-b border-orange-500/10 pb-4 px-1">
             <div className="flex-1 space-y-4">
               <div className="flex items-center gap-3 h-10 pt-2">
-                <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">PREFIX</h2>
+                <h2 className="text-3xl lg:text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">PREFIX</h2>
                 {!showSuffix && (
                   <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 text-[10px] font-black tracking-widest uppercase">Full Width</Badge>
                 )}
@@ -561,15 +588,12 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
         {/* Suffix Container */}
         {showSuffix && (
-          <div className="space-y-6 p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
-            <div className="flex flex-col border-b border-orange-500/10 pb-4 h-44 px-1">
+          <div className={`space-y-6 p-4 lg:p-6 rounded-2xl bg-orange-500/5 border border-orange-500/20 shadow-[0_0_30px_rgba(251,146,60,0.05)] flex-1 animate-in fade-in slide-in-from-right-4 duration-500 ${mobileTab !== "suffix" ? "hidden lg:block" : ""}`}>
+            <div className="flex flex-col border-b border-orange-500/10 pb-4 px-1">
               <div className="flex-1 space-y-4">
-                <div className="flex items-center gap-3 h-10 pt-2">
-                  <h2 className="text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">SUFFIX</h2>
+                <div className="flex items-center gap-3 pt-2">
+                  <h2 className="text-3xl lg:text-4xl font-black text-orange-400 italic tracking-tighter drop-shadow-[0_0_15px_rgba(251,146,60,0.2)] uppercase">SUFFIX</h2>
                 </div>
-
-                {/* Empty spacer for alignment with Prefix navigation letters */}
-                <div className="min-h-[32px]" />
               </div>
 
               <div className="flex items-center justify-between w-full pt-4 border-t border-orange-500/5 mt-auto">

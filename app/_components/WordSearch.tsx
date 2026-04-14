@@ -274,19 +274,17 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         </div>
       </div>
 
-      {/* Sticky: search bar + suffix chips only */}
-      <div className="sticky top-20 z-20 -mx-4 px-4 pb-4 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
-        <div className="max-w-4xl mx-auto flex flex-col gap-3 pt-3">
-
-          {/* Search bar */}
+      {/* Sticky: search bar only */}
+      <div className="sticky top-20 z-20 -mx-4 px-4 pb-3 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
+        <div className="max-w-4xl mx-auto pt-3">
           <div className="w-full relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
             <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50">
-              <div className="flex items-center px-4 py-3.5 gap-3">
+              <div className="flex items-center px-3 py-2.5 gap-2">
                 <button
                   onClick={() => setShowSuffix(!showSuffix)}
                   title={showSuffix ? "Hide Suffix Results" : "Show Suffix Results"}
-                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                  className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
                     showSuffix
                       ? "bg-white/5 border border-white/10 text-white/40 hover:text-white"
                       : "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
@@ -298,7 +296,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 <button
                   onClick={() => setIsTestingMode(!isTestingMode)}
                   title={isTestingMode ? "Testing Mode: Only Unverified Words" : "Normal Mode: All Words"}
-                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                  className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
                     isTestingMode
                       ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
                       : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
@@ -313,7 +311,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     if (isBlockMode) setBlockedSuffixes(new Set());
                   }}
                   title={isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF — click to enable, then tap suffixes above to block"}
-                  className={`p-1.5 rounded-md transition-all duration-300 ${
+                  className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
                     isBlockMode
                       ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
                       : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
@@ -325,14 +323,14 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search across repository..."
-                  className="flex-1 bg-transparent text-xl font-bold text-white placeholder-white/50 border-none outline-none ring-0 shadow-none p-0 h-auto italic"
+                  placeholder="Search..."
+                  className="flex-1 bg-transparent text-lg font-bold text-white placeholder-white/30 border-none outline-none ring-0 shadow-none p-0 h-auto italic min-w-0"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   autoFocus
                 />
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
                   {search && (
                     <button
                       onClick={() => setSearch("")}
@@ -349,68 +347,70 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Suffix chips — in block mode, clicking blocks that suffix instead of searching */}
-          <div className="flex flex-wrap gap-2">
-            {isBlockMode && (
-              <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center">
-                Block:
-              </span>
-            )}
-            {tacticalSuffixes.map((ts) => {
-              const isBlocked = blockedSuffixes.has(ts.suffix);
-              return (
-                <button
-                  key={ts.id}
-                  onClick={() => {
-                    if (isBlockMode) {
-                      setBlockedSuffixes(prev => {
-                        const next = new Set(prev);
-                        isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
-                        return next;
-                      });
-                    } else {
-                      setSearch(ts.suffix);
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
-                    isBlocked
-                      ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
-                      : isBlockMode
-                        ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
-                        : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
-                  }`}
-                >
-                  -{ts.suffix}
-                </button>
-              );
-            })}
-            {/* Search history */}
-          {searchHistory.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Recent:</span>
-              {searchHistory.map(h => (
-                <button
-                  key={h}
-                  onClick={() => setSearch(h)}
-                  className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-white hover:border-white/30 transition-all uppercase tracking-wider"
-                >
-                  {h}
-                </button>
-              ))}
-              <button
-                onClick={() => {
-                  setSearchHistory([]);
-                  localStorage.removeItem("sk_search_history");
-                }}
-                className="text-[9px] font-black text-white/20 hover:text-rose-400 transition-colors uppercase tracking-widest"
-              >
-                Clear
-              </button>
-            </div>
+      {/* Suffix chips + search history — scrolls with page */}
+      <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          {isBlockMode && (
+            <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center">
+              Block:
+            </span>
           )}
+          {tacticalSuffixes.map((ts) => {
+            const isBlocked = blockedSuffixes.has(ts.suffix);
+            return (
+              <button
+                key={ts.id}
+                onClick={() => {
+                  if (isBlockMode) {
+                    setBlockedSuffixes(prev => {
+                      const next = new Set(prev);
+                      isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
+                      return next;
+                    });
+                  } else {
+                    setSearch(ts.suffix);
+                  }
+                }}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
+                  isBlocked
+                    ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
+                    : isBlockMode
+                      ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
+                      : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
+                }`}
+              >
+                -{ts.suffix}
+              </button>
+            );
+          })}
         </div>
-        </div>
+
+        {searchHistory.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">Recent:</span>
+            {searchHistory.map(h => (
+              <button
+                key={h}
+                onClick={() => setSearch(h)}
+                className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-black text-white/40 hover:text-white hover:border-white/30 transition-all uppercase tracking-wider"
+              >
+                {h}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                setSearchHistory([]);
+                localStorage.removeItem("sk_search_history");
+              }}
+              className="text-[9px] font-black text-white/20 hover:text-rose-400 transition-colors uppercase tracking-widest"
+            >
+              Clear
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-8 border-t border-white/5 pt-8">

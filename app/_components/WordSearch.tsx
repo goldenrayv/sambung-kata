@@ -164,14 +164,18 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         })
         .catch(err => { if (err?.name !== "AbortError") console.error(err); });
 
-      fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
-        .then(r => r.ok ? r.json() : null)
-        .then(sData => { if (sData) setSuffixData(sData); })
-        .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+      if (showSuffix) {
+        fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
+          .then(r => r.ok ? r.json() : null)
+          .then(sData => { if (sData) setSuffixData(sData); })
+          .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+      } else {
+        setSuffixData({ results: [], totalCount: 0, hasMore: false });
+      }
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [search, userId, isTestingMode]);
+  }, [search, userId, isTestingMode, showSuffix]);
 
 
   const groupedPrefix = useMemo(() =>

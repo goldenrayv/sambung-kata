@@ -26,6 +26,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [isBlockMode, setIsBlockMode] = useState(false);
   const [hideRisky, setHideRisky] = useState(false);
   const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
+  const [prefixPage, setPrefixPage] = useState(1);
+  const [suffixPage, setSuffixPage] = useState(1);
+  const PAGE_SIZE = 150;
   // Stores tactical suffix strings to block, e.g. "TIF", "IF"
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
@@ -136,6 +139,8 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
 
     window.scrollTo({ top: 0, behavior: "instant" });
+    setPrefixPage(1);
+    setSuffixPage(1);
     setIsSearching(true);
 
     const timer = setTimeout(() => {
@@ -179,8 +184,23 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   }, [search, userId, isTestingMode, showSuffix]);
 
 
+  const isPaged = search.trim().length === 1;
+
+  const pagedPrefixResults = useMemo(() => {
+    if (!isPaged) return prefixData.results;
+    return prefixData.results.slice((prefixPage - 1) * PAGE_SIZE, prefixPage * PAGE_SIZE);
+  }, [prefixData.results, prefixPage, isPaged]);
+
+  const pagedSuffixResults = useMemo(() => {
+    if (!isPaged) return suffixData.results;
+    return suffixData.results.slice((suffixPage - 1) * PAGE_SIZE, suffixPage * PAGE_SIZE);
+  }, [suffixData.results, suffixPage, isPaged]);
+
+  const prefixTotalPages = isPaged ? Math.ceil(prefixData.results.length / PAGE_SIZE) : 1;
+  const suffixTotalPages = isPaged ? Math.ceil(suffixData.results.length / PAGE_SIZE) : 1;
+
   const groupedPrefix = useMemo(() =>
-    prefixData.results.reduce((acc, wordObj: any) => {
+    pagedPrefixResults.reduce((acc, wordObj: any) => {
       const word = (wordObj.word || wordObj).toUpperCase();
 
       let matchedSuffix = null;
@@ -202,7 +222,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
       return acc;
     }, {} as Record<string, { words: any[], tier: number }>),
-  [prefixData.results, tacticalSuffixes]);
+  [pagedPrefixResults, tacticalSuffixes]);
 
   const sortedPrefixSuffixes = useMemo(() =>
     Object.keys(groupedPrefix).sort((a, b) => {
@@ -217,14 +237,14 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   [groupedPrefix]);
 
   const groupedSuffix = useMemo(() =>
-    suffixData.results.reduce((acc, wordObj: any) => {
+    pagedSuffixResults.reduce((acc, wordObj: any) => {
       const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
     }, {} as Record<string, any[]>),
-  [suffixData.results]);
+  [pagedSuffixResults]);
 
   const sortedSuffixLetters = useMemo(() =>
     Object.keys(groupedSuffix).sort(),
@@ -534,6 +554,29 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </div>
           </div>
 
+          {/* Prefix pagination — only for 1-char searches */}
+          {isPaged && prefixTotalPages > 1 && (
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => { setPrefixPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                disabled={prefixPage === 1}
+                className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                ← Prev
+              </button>
+              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">
+                {prefixPage} / {prefixTotalPages}
+              </span>
+              <button
+                onClick={() => { setPrefixPage(p => Math.min(prefixTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                disabled={prefixPage === prefixTotalPages}
+                className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
           <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
             {sortedPrefixSuffixes.length > 0 ? (
               sortedPrefixSuffixes.map((suffix) => (
@@ -584,6 +627,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             ) : null}
           </div>
+
         </div>
 
         {/* Suffix Container */}
@@ -611,6 +655,29 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 </div>
               </div>
             </div>
+
+            {/* Suffix pagination — only for 1-char searches */}
+            {isPaged && suffixTotalPages > 1 && (
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={() => { setSuffixPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  disabled={suffixPage === 1}
+                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  ← Prev
+                </button>
+                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">
+                  {suffixPage} / {suffixTotalPages}
+                </span>
+                <button
+                  onClick={() => { setSuffixPage(p => Math.min(suffixTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
+                  disabled={suffixPage === suffixTotalPages}
+                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
 
             <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {sortedSuffixLetters.length > 0 ? (
@@ -648,6 +715,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 </div>
               ) : null}
             </div>
+
           </div>
         )}
       </div>

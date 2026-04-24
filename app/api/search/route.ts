@@ -49,9 +49,44 @@ export async function GET(req: Request) {
   const mode = searchParams.get("mode") ?? "prefix";
   const statusFilter = searchParams.get("status");
 
-  if (!q) return NextResponse.json([]);
-
   const LIMIT = 2500;
+
+  // Combo mode: words starting with `prefix` AND ending with `suffix`
+  if (mode === "combo") {
+    const prefixQ = (searchParams.get("prefix") ?? "").trim().toUpperCase();
+    const suffixQ = (searchParams.get("suffix") ?? "").trim().toUpperCase();
+
+    if (!prefixQ && !suffixQ) return NextResponse.json({ results: [], totalCount: 0, hasMore: false });
+
+    const baseWhere: any = {
+      isActive: true,
+      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
+    };
+
+    if (prefixQ && suffixQ) {
+      baseWhere.AND = [
+        { word: { startsWith: prefixQ, mode: "insensitive" as const } },
+        { word: { endsWith: suffixQ, mode: "insensitive" as const } },
+      ];
+    } else if (prefixQ) {
+      baseWhere.word = { startsWith: prefixQ, mode: "insensitive" as const };
+    } else {
+      baseWhere.word = { endsWith: suffixQ, mode: "insensitive" as const };
+    }
+
+    const rows = await prisma.word.findMany({
+      where: baseWhere,
+      select: { id: true, word: true, isVerified: true },
+      take: LIMIT + 1,
+      orderBy: { word: "asc" },
+    });
+
+    const hasMore = rows.length > LIMIT;
+    const finalResults = hasMore ? rows.slice(0, LIMIT) : rows;
+    return NextResponse.json({ results: finalResults, totalCount: finalResults.length, hasMore });
+  }
+
+  if (!q) return NextResponse.json([]);
 
   if (mode === "prefix") {
     const ALL_MAGIC = await getTacticalSuffixes();

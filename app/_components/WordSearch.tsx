@@ -52,6 +52,19 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const abortRef = useRef<AbortController | null>(null);
   const comboAbortRef = useRef<AbortController | null>(null);
 
+  type CacheEntry = { results: any[]; totalCount: number; hasMore: boolean; ts: number };
+  const resultCache = useRef<Map<string, CacheEntry>>(new Map());
+
+  const getCached = (key: string) => {
+    const entry = resultCache.current.get(key);
+    if (!entry || Date.now() - entry.ts > 5 * 60 * 1000) { resultCache.current.delete(key); return null; }
+    return entry;
+  };
+  const setCache = (key: string, data: { results: any[]; totalCount: number; hasMore: boolean }) => {
+    if (resultCache.current.size >= 50) resultCache.current.delete(resultCache.current.keys().next().value!);
+    resultCache.current.set(key, { ...data, ts: Date.now() });
+  };
+
   // Focus shortcut: Tab or Cmd/Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -167,47 +180,56 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       return;
     }
 
-    window.scrollTo({ top: 0, behavior: "instant" });
     setPrefixPage(1);
     setSuffixPage(1);
-    setIsSearching(true);
 
-    const timer = setTimeout(() => {
-      abortRef.current?.abort();
-      abortRef.current = new AbortController();
-      const { signal } = abortRef.current;
+    const raw = search.trim();
+    const status = isTestingMode ? 'testing' : 'all';
+    const prefixKey = `p:${raw.toUpperCase()}:${status}`;
+    const suffixKey = `s:${raw.toUpperCase()}:${status}`;
 
-      const q = encodeURIComponent(search.trim());
-      const status = isTestingMode ? 'testing' : 'all';
-      const headers = { Authorization: `Bearer ${userId}` };
+    const cachedPrefix = getCached(prefixKey);
+    const cachedSuffix = showSuffix ? getCached(suffixKey) : null;
 
-      fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
+    if (cachedPrefix) setPrefixData(cachedPrefix);
+    if (cachedSuffix) setSuffixData(cachedSuffix);
+    setIsSearching(!cachedPrefix);
+
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
+    const q = encodeURIComponent(raw);
+    const headers = { Authorization: `Bearer ${userId}` };
+
+    fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(pData => {
+        if (!pData) return;
+        setPrefixData(pData);
+        setIsSearching(false);
+        setCache(prefixKey, pData);
+        if (pData.totalCount > 0) {
+          setSearchHistory(prev => {
+            const next = [raw, ...prev.filter(h => h !== raw)].slice(0, 8);
+            localStorage.setItem("sk_search_history", JSON.stringify(next));
+            return next;
+          });
+        }
+      })
+      .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+
+    if (showSuffix) {
+      fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
         .then(r => r.ok ? r.json() : null)
-        .then(pData => {
-          if (!pData) return;
-          setPrefixData(pData);
-          setIsSearching(false);
-          if (pData.totalCount > 0) {
-            setSearchHistory(prev => {
-              const next = [search.trim(), ...prev.filter(h => h !== search.trim())].slice(0, 8);
-              localStorage.setItem("sk_search_history", JSON.stringify(next));
-              return next;
-            });
-          }
+        .then(sData => {
+          if (sData) { setSuffixData(sData); setCache(suffixKey, sData); }
         })
         .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+    } else {
+      setSuffixData({ results: [], totalCount: 0, hasMore: false });
+    }
 
-      if (showSuffix) {
-        fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
-          .then(r => r.ok ? r.json() : null)
-          .then(sData => { if (sData) setSuffixData(sData); })
-          .catch(err => { if (err?.name !== "AbortError") console.error(err); });
-      } else {
-        setSuffixData({ results: [], totalCount: 0, hasMore: false });
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
+    return () => { abortRef.current?.abort(); };
   }, [search, userId, isTestingMode, showSuffix, searchMode]);
 
   // Normal mode: combo fetch (prefix + suffix intersection)
@@ -221,27 +243,30 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
 
     setComboPage(1);
-    setIsSearching(true);
 
-    const timer = setTimeout(() => {
-      comboAbortRef.current?.abort();
-      comboAbortRef.current = new AbortController();
-      const { signal } = comboAbortRef.current;
+    const status = isTestingMode ? 'testing' : 'all';
+    const comboKey = `c:${prefixSearch.trim().toUpperCase()}:${suffixSearch.trim().toUpperCase()}:${status}`;
+    const cachedCombo = getCached(comboKey);
+    if (cachedCombo) { setComboData(cachedCombo); setIsSearching(false); }
+    else setIsSearching(true);
 
-      const status = isTestingMode ? 'testing' : 'all';
-      const pParam = prefixSearch.trim() ? `&prefix=${encodeURIComponent(prefixSearch.trim())}` : "";
-      const sParam = suffixSearch.trim() ? `&suffix=${encodeURIComponent(suffixSearch.trim())}` : "";
+    comboAbortRef.current?.abort();
+    comboAbortRef.current = new AbortController();
+    const { signal } = comboAbortRef.current;
+    const pParam = prefixSearch.trim() ? `&prefix=${encodeURIComponent(prefixSearch.trim())}` : "";
+    const sParam = suffixSearch.trim() ? `&suffix=${encodeURIComponent(suffixSearch.trim())}` : "";
 
-      fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}`, {
-        headers: { Authorization: `Bearer ${userId}` },
-        signal,
+    fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}`, {
+      headers: { Authorization: `Bearer ${userId}` },
+      signal,
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) { setComboData(data); setIsSearching(false); setCache(comboKey, data); }
       })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => { if (data) { setComboData(data); setIsSearching(false); } })
-        .catch(err => { if (err?.name !== "AbortError") console.error(err); });
-    }, 100);
+      .catch(err => { if (err?.name !== "AbortError") console.error(err); });
 
-    return () => clearTimeout(timer);
+    return () => { comboAbortRef.current?.abort(); };
   }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode]);
 
   // Derived query strings

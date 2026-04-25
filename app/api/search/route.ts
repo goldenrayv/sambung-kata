@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// --- Module-level caches to avoid repeated DB round-trips on every search ---
-const suffixCache = { data: null as string[] | null, ts: 0 };
-const SUFFIX_TTL = 5 * 60 * 1000; // 5 min
-
-async function getTacticalSuffixes(): Promise<string[]> {
-  if (suffixCache.data && Date.now() - suffixCache.ts < SUFFIX_TTL) {
-    return suffixCache.data;
-  }
-  const rows = await prisma.tacticalSuffix.findMany({ select: { suffix: true } });
-  suffixCache.data = rows.map((r) => r.suffix);
-  suffixCache.ts = Date.now();
-  return suffixCache.data;
-}
 
 const userCache = new Map<string, { expiresAt: Date; cachedAt: number }>();
 const USER_TTL = 60 * 1000; // 1 min
@@ -89,41 +76,19 @@ export async function GET(req: Request) {
   if (!q) return NextResponse.json([]);
 
   if (mode === "prefix") {
-    const ALL_MAGIC = await getTacticalSuffixes();
-    const suffixOR = ALL_MAGIC.length > 0
-      ? ALL_MAGIC.map(s => ({ word: { endsWith: s, mode: "insensitive" as const } }))
-      : undefined;
-
-    const baseWhere = {
-      isActive: true,
-      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-      word: { startsWith: q, mode: "insensitive" as const },
-    };
-
-    // Fetch strategic results + one extra to detect hasMore without a count query
-    const strategicResults = await prisma.word.findMany({
-      where: { ...baseWhere, OR: suffixOR },
+    const rows = await prisma.word.findMany({
+      where: {
+        isActive: true,
+        isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
+        word: { startsWith: q, mode: "insensitive" as const },
+      },
       select: { id: true, word: true, isVerified: true },
+      take: LIMIT + 1,
       orderBy: { word: "asc" },
     });
 
-    let results = strategicResults;
-
-    // Fill remaining slots (up to LIMIT+1) with non-tactical-suffix words
-    const remaining = LIMIT + 1 - results.length;
-    if (remaining > 0) {
-      const otherResults = await prisma.word.findMany({
-        where: { ...baseWhere, NOT: suffixOR },
-        select: { id: true, word: true, isVerified: true },
-        take: remaining,
-        orderBy: { word: "asc" },
-      });
-      results = [...results, ...otherResults];
-    }
-
-    const hasMore = results.length > LIMIT;
-    if (hasMore) results = results.slice(0, LIMIT);
-
+    const hasMore = rows.length > LIMIT;
+    const results = hasMore ? rows.slice(0, LIMIT) : rows;
     return NextResponse.json({ results, totalCount: results.length, hasMore });
   }
 

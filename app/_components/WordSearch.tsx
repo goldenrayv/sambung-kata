@@ -262,12 +262,16 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     return comboData.results.slice((comboPage - 1) * PAGE_SIZE, comboPage * PAGE_SIZE);
   }, [comboData.results, comboPage, isComboPaged]);
 
+  const activeTacticalSuffixes = useMemo(() =>
+    isBrutalMode ? tacticalSuffixes : tacticalSuffixes.filter(ts => ts.suffix.length <= 3),
+  [tacticalSuffixes, isBrutalMode]);
+
   const groupedPrefix = useMemo(() =>
     prefixData.results.reduce((acc: Record<string, { words: any[], tier: number }>, wordObj: any) => {
       const word = (wordObj.word || wordObj).toUpperCase();
 
       let matchedSuffix = null;
-      for (const ts of tacticalSuffixes) {
+      for (const ts of activeTacticalSuffixes) {
         if (word.endsWith(ts.suffix)) {
           matchedSuffix = ts.suffix;
           break;
@@ -285,7 +289,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
       return acc;
     }, {} as Record<string, { words: any[], tier: number }>),
-  [prefixData.results, tacticalSuffixes]);
+  [prefixData.results, activeTacticalSuffixes]);
 
   const sortedPrefixSuffixes = useMemo(() =>
     Object.keys(groupedPrefix).sort((a, b) => {

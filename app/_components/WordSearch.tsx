@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -34,6 +34,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [showSuffix, setShowSuffix] = useState(true);
   const [isTestingMode, setIsTestingMode] = useState(false);
   const [isBlockMode, setIsBlockMode] = useState(false);
+  const [isBrutalMode, setIsBrutalMode] = useState(false);
   const [hideRisky, setHideRisky] = useState(false);
   const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
   const [prefixPage, setPrefixPage] = useState(1);
@@ -450,20 +451,33 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 </button>
 
                 {searchMode === "fast" && (
-                  <button
-                    onClick={() => {
-                      setIsBlockMode(!isBlockMode);
-                      if (isBlockMode) setBlockedSuffixes(new Set());
-                    }}
-                    title={isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF"}
-                    className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                      isBlockMode
-                        ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
-                        : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                    }`}
-                  >
-                    <ShieldOff className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsBlockMode(!isBlockMode);
+                        if (isBlockMode) setBlockedSuffixes(new Set());
+                      }}
+                      title={isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF"}
+                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
+                        isBlockMode
+                          ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
+                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                      }`}
+                    >
+                      <ShieldOff className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setIsBrutalMode(!isBrutalMode)}
+                      title={isBrutalMode ? "Brutal Mode: ON — showing long suffixes" : "Brutal Mode: OFF — click to show suffixes longer than 3 chars"}
+                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
+                        isBrutalMode
+                          ? "bg-red-700/20 border border-red-700/40 text-red-400 font-bold"
+                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                      }`}
+                    >
+                      <Swords className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
 
                 {/* Fast mode: single input */}
@@ -556,7 +570,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                 Block:
               </span>
             )}
-            {tacticalSuffixes.map((ts) => {
+            {tacticalSuffixes.filter(ts => isBrutalMode || ts.suffix.length <= 3).map((ts) => {
               const isBlocked = blockedSuffixes.has(ts.suffix);
               return (
                 <button

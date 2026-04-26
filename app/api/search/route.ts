@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const suffixCache = { data: null as string[] | null, ts: 0 };
+async function getTacticalSuffixes(): Promise<string[]> {
+  if (suffixCache.data && Date.now() - suffixCache.ts < 5 * 60 * 1000) return suffixCache.data;
+  const rows = await prisma.tacticalSuffix.findMany({ select: { suffix: true } });
+  suffixCache.data = rows.map(r => r.suffix);
+  suffixCache.ts = Date.now();
+  return suffixCache.data;
+}
 
 const userCache = new Map<string, { expiresAt: Date; cachedAt: number }>();
 const USER_TTL = 60 * 1000; // 1 min
@@ -76,19 +84,46 @@ export async function GET(req: Request) {
   if (!q) return NextResponse.json([]);
 
   if (mode === "prefix") {
-    const rows = await prisma.word.findMany({
-      where: {
-        isActive: true,
-        isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-        word: { startsWith: q, mode: "insensitive" as const },
-      },
-      select: { id: true, word: true, isVerified: true },
-      take: LIMIT + 1,
-      orderBy: { word: "asc" },
-    });
+    const ALL_MAGIC = await getTacticalSuffixes();
+    const suffixOR = ALL_MAGIC.length > 0
+      ? ALL_MAGIC.map(s => ({ word: { endsWith: s, mode: "insensitive" as const } }))
+      : undefined;
 
-    const hasMore = rows.length > LIMIT;
-    const results = hasMore ? rows.slice(0, LIMIT) : rows;
+    const baseWhere = {
+      isActive: true,
+      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
+      word: { startsWith: q, mode: "insensitive" as const },
+    };
+
+    // Run both queries in parallel: tactical-suffix words (no limit) + others (fill remaining)
+    const [strategicRows, otherRows] = await Promise.all([
+      prisma.word.findMany({
+        where: suffixOR ? { ...baseWhere, OR: suffixOR } : baseWhere,
+        select: { id: true, word: true, isVerified: true },
+        orderBy: { word: "asc" },
+      }),
+      suffixOR
+        ? prisma.word.findMany({
+            where: { ...baseWhere, NOT: suffixOR },
+            select: { id: true, word: true, isVerified: true },
+            take: LIMIT + 1,
+            orderBy: { word: "asc" },
+          })
+        : Promise.resolve([] as { id: string; word: string; isVerified: string }[]),
+    ]);
+
+    const remaining = LIMIT - strategicRows.length;
+    let results: typeof strategicRows;
+    let hasMore: boolean;
+
+    if (remaining <= 0) {
+      results = strategicRows.slice(0, LIMIT);
+      hasMore = strategicRows.length > LIMIT;
+    } else {
+      hasMore = otherRows.length > remaining;
+      results = [...strategicRows, ...(hasMore ? otherRows.slice(0, remaining) : otherRows)];
+    }
+
     return NextResponse.json({ results, totalCount: results.length, hasMore });
   }
 

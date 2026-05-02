@@ -37,10 +37,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [isBrutalMode, setIsBrutalMode] = useState(false);
   const [hideRisky, setHideRisky] = useState(false);
   const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
-  const [prefixPage, setPrefixPage] = useState(1);
-  const [suffixPage, setSuffixPage] = useState(1);
-  const [comboPage, setComboPage] = useState(1);
-  const PAGE_SIZE = 150;
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -122,9 +118,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     setPrefixData({ results: [], totalCount: 0, hasMore: false });
     setSuffixData({ results: [], totalCount: 0, hasMore: false });
     setComboData({ results: [], totalCount: 0, hasMore: false });
-    setPrefixPage(1);
-    setSuffixPage(1);
-    setComboPage(1);
     setIsSearching(false);
   }, [searchMode]);
 
@@ -179,9 +172,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       setIsSearching(false);
       return;
     }
-
-    setPrefixPage(1);
-    setSuffixPage(1);
 
     const raw = search.trim();
     const status = isTestingMode ? 'testing' : 'all';
@@ -242,8 +232,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       return;
     }
 
-    setComboPage(1);
-
     const status = isTestingMode ? 'testing' : 'all';
     const comboKey = `c:${prefixSearch.trim().toUpperCase()}:${suffixSearch.trim().toUpperCase()}:${status}`;
     const cachedCombo = getCached(comboKey);
@@ -268,24 +256,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
     return () => { comboAbortRef.current?.abort(); };
   }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode]);
-
-  // Derived query strings
-  const activePrefixQuery = searchMode === "fast" ? search : prefixSearch;
-  const activeSuffixQuery = searchMode === "fast" ? search : suffixSearch;
-
-  const isPrefixPaged = activePrefixQuery.trim().length === 1;
-  const isSuffixPaged = activeSuffixQuery.trim().length === 1;
-  const isComboPaged = comboData.results.length > PAGE_SIZE;
-
-  const pagedSuffixResults = useMemo(() => {
-    if (!isSuffixPaged) return suffixData.results;
-    return suffixData.results.slice((suffixPage - 1) * PAGE_SIZE, suffixPage * PAGE_SIZE);
-  }, [suffixData.results, suffixPage, isSuffixPaged]);
-
-  const pagedComboResults = useMemo(() => {
-    if (!isComboPaged) return comboData.results;
-    return comboData.results.slice((comboPage - 1) * PAGE_SIZE, comboPage * PAGE_SIZE);
-  }, [comboData.results, comboPage, isComboPaged]);
 
   const activeTacticalSuffixes = useMemo(() =>
     isBrutalMode ? tacticalSuffixes : tacticalSuffixes.filter(ts => ts.suffix.length <= 3),
@@ -328,40 +298,15 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }),
   [groupedPrefix]);
 
-  // Paginate at the group level so no group is ever split across pages
-  const prefixPageGroups = useMemo(() => {
-    if (!isPrefixPaged) return [sortedPrefixSuffixes];
-    const pages: string[][] = [];
-    let page: string[] = [];
-    let count = 0;
-    for (const key of sortedPrefixSuffixes) {
-      const size = groupedPrefix[key].words.length;
-      if (count > 0 && count + size > PAGE_SIZE) {
-        pages.push(page);
-        page = [key];
-        count = size;
-      } else {
-        page.push(key);
-        count += size;
-      }
-    }
-    if (page.length > 0) pages.push(page);
-    return pages;
-  }, [sortedPrefixSuffixes, groupedPrefix, isPrefixPaged]);
-
-  const prefixTotalPages = prefixPageGroups.length;
-  const suffixTotalPages = isSuffixPaged ? Math.ceil(suffixData.results.length / PAGE_SIZE) : 1;
-  const comboTotalPages = isComboPaged ? Math.ceil(comboData.results.length / PAGE_SIZE) : 1;
-
   const groupedSuffix = useMemo(() =>
-    pagedSuffixResults.reduce((acc, wordObj: any) => {
+    suffixData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
       const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
     }, {} as Record<string, any[]>),
-  [pagedSuffixResults]);
+  [suffixData.results]);
 
   const sortedSuffixLetters = useMemo(() =>
     Object.keys(groupedSuffix).sort(),
@@ -369,13 +314,13 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
   // Combo results: group by first letter alphabetically
   const groupedCombo = useMemo(() =>
-    pagedComboResults.reduce((acc, wordObj: any) => {
+    comboData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
       const letter = (wordObj.word || wordObj)[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
     }, {} as Record<string, any[]>),
-  [pagedComboResults]);
+  [comboData.results]);
 
   const sortedComboLetters = useMemo(() =>
     Object.keys(groupedCombo).sort(),
@@ -736,29 +681,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             </div>
 
-            {/* Combo pagination */}
-            {isComboPaged && comboTotalPages > 1 && (
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => { setComboPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                  disabled={comboPage === 1}
-                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  ← Prev
-                </button>
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">
-                  {comboPage} / {comboTotalPages}
-                </span>
-                <button
-                  onClick={() => { setComboPage(p => Math.min(comboTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                  disabled={comboPage === comboTotalPages}
-                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-
             <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {sortedComboLetters.length > 0 ? (
                 sortedComboLetters.map((letter) => (
@@ -821,7 +743,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2 group/nav">
-                      {(prefixPageGroups[prefixPage - 1] ?? []).map((suffix) => (
+                      {sortedPrefixSuffixes.map((suffix: string) => (
                         <button
                           key={suffix}
                           onClick={() => {
@@ -875,38 +797,16 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               </div>
             </div>
 
-            {isPrefixPaged && prefixTotalPages > 1 && (
-              <div className="flex items-center justify-between gap-2">
-                <button
-                  onClick={() => { setPrefixPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                  disabled={prefixPage === 1}
-                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  ← Prev
-                </button>
-                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">
-                  {prefixPage} / {prefixTotalPages}
-                </span>
-                <button
-                  onClick={() => { setPrefixPage(p => Math.min(prefixTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                  disabled={prefixPage === prefixTotalPages}
-                  className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-
             <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
-              {(prefixPageGroups[prefixPage - 1] ?? []).length > 0 ? (
-                (prefixPageGroups[prefixPage - 1] ?? []).map((suffix) => (
+              {sortedPrefixSuffixes.length > 0 ? (
+                sortedPrefixSuffixes.map((suffix: string) => (
                   <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
                     <div className="flex items-center justify-between gap-2 px-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">
                           {suffix.toUpperCase()}
                           <span className="text-[10px] ml-2 opacity-50 font-medium uppercase tracking-widest italic">
-                            ({groupedPrefix[suffix].words.length} words{prefixData.hasMore && suffix === (prefixPageGroups[prefixPage - 1] ?? [])[prefixPageGroups[prefixPage - 1]?.length - 1] ? ", and more" : ""})
+                            ({groupedPrefix[suffix].words.length} words{prefixData.hasMore && suffix === sortedPrefixSuffixes[sortedPrefixSuffixes.length - 1] ? ", and more" : ""})
                           </span>
                         </span>
                         <div className="h-[1px] w-12 bg-orange-500/10" />
@@ -974,28 +874,6 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                   </div>
                 </div>
               </div>
-
-              {isSuffixPaged && suffixTotalPages > 1 && (
-                <div className="flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => { setSuffixPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                    disabled={suffixPage === 1}
-                    className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    ← Prev
-                  </button>
-                  <span className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">
-                    {suffixPage} / {suffixTotalPages}
-                  </span>
-                  <button
-                    onClick={() => { setSuffixPage(p => Math.min(suffixTotalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'instant' }); }}
-                    disabled={suffixPage === suffixTotalPages}
-                    className="flex-1 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/50 hover:text-white hover:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    Next →
-                  </button>
-                </div>
-              )}
 
               <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
                 {sortedSuffixLetters.length > 0 ? (

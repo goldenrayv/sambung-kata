@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -35,6 +35,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [isTestingMode, setIsTestingMode] = useState(false);
   const [isBlockMode, setIsBlockMode] = useState(false);
   const [isBrutalMode, setIsBrutalMode] = useState(false);
+  const [isHideMode, setIsHideMode] = useState(false);
   const [hideRisky, setHideRisky] = useState(false);
   const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
@@ -461,6 +462,17 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     >
                       <Swords className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={() => setIsHideMode(!isHideMode)}
+                      title={isHideMode ? "Hide Mode: ON — click a suffix chip to hide its group" : "Hide Mode: OFF — click to configure hidden suffix groups"}
+                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
+                        isHideMode
+                          ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 font-bold"
+                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
+                      }`}
+                    >
+                      <EyeOff className="w-4 h-4" />
+                    </button>
                   </>
                 )}
 
@@ -549,18 +561,21 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       {searchMode === "fast" && (
         <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide lg:flex-wrap lg:overflow-visible lg:pb-0">
-            {isBlockMode && (
-              <span className="px-2 py-1 text-[9px] font-black text-rose-400/60 uppercase tracking-widest self-center shrink-0">
-                Block:
+            {(isBlockMode || isHideMode) && (
+              <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
+                {isHideMode ? "Hide:" : "Block:"}
               </span>
             )}
             {tacticalSuffixes.filter(ts => isBrutalMode || ts.suffix.length <= 3).map((ts) => {
               const isBlocked = blockedSuffixes.has(ts.suffix);
+              const isHidden = hiddenSuffixGroups.has(`-${ts.suffix}`);
               return (
                 <button
                   key={ts.id}
                   onClick={() => {
-                    if (isBlockMode) {
+                    if (isHideMode) {
+                      toggleHideGroup(`-${ts.suffix}`);
+                    } else if (isBlockMode) {
                       setBlockedSuffixes(prev => {
                         const next = new Set(prev);
                         isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
@@ -571,11 +586,15 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                     }
                   }}
                   className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
-                    isBlocked
-                      ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
-                      : isBlockMode
-                        ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
-                        : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
+                    isHidden
+                      ? "bg-sky-500/5 border border-sky-500/20 text-sky-400/30 line-through"
+                      : isBlocked
+                        ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
+                        : isHideMode
+                          ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/5 hover:text-sky-400/30"
+                          : isBlockMode
+                            ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
+                            : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
                   }`}
                 >
                   -{ts.suffix}
@@ -819,23 +838,14 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               {sortedPrefixSuffixes.length > 0 ? (
                 sortedPrefixSuffixes.map((suffix: string) => (
                   <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
-                    <div className="flex items-center justify-between gap-2 px-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">
-                          {suffix.toUpperCase()}
-                          <span className="text-[10px] ml-2 opacity-50 font-medium uppercase tracking-widest italic">
-                            ({groupedPrefix[suffix].words.length} words{prefixData.hasMore && suffix === sortedPrefixSuffixes[sortedPrefixSuffixes.length - 1] ? ", and more" : ""})
-                          </span>
+                    <div className="flex items-center gap-2 px-1">
+                      <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">
+                        {suffix.toUpperCase()}
+                        <span className="text-[10px] ml-2 opacity-50 font-medium uppercase tracking-widest italic">
+                          ({groupedPrefix[suffix].words.length} words{prefixData.hasMore && suffix === sortedPrefixSuffixes[sortedPrefixSuffixes.length - 1] ? ", and more" : ""})
                         </span>
-                        <div className="h-[1px] w-12 bg-orange-500/10" />
-                      </div>
-                      <button
-                        onClick={() => toggleHideGroup(suffix)}
-                        title={`Hide ${suffix} group`}
-                        className="p-1 rounded hover:bg-white/10 text-white/20 hover:text-white/60 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      </span>
+                      <div className="h-[1px] w-12 bg-orange-500/10" />
                     </div>
                     <div className="flex flex-wrap gap-2 content-start">
                       {groupedPrefix[suffix].words.filter((wordObj: any) => !(hideRisky && isWordRisky(wordObj.word))).map((wordObj: any) => {

@@ -38,6 +38,19 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [hideRisky, setHideRisky] = useState(false);
   const [mobileTab, setMobileTab] = useState<"prefix" | "suffix">("prefix");
   const [blockedSuffixes, setBlockedSuffixes] = useState<Set<string>>(new Set());
+  const [hiddenSuffixGroups, setHiddenSuffixGroups] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try { return new Set(JSON.parse(localStorage.getItem("sk_hidden_groups") || "[]")); } catch { return new Set(); }
+  });
+
+  const toggleHideGroup = (key: string) => {
+    setHiddenSuffixGroups(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      localStorage.setItem("sk_hidden_groups", JSON.stringify([...next]));
+      return next;
+    });
+  };
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     try { return JSON.parse(localStorage.getItem("sk_search_history") || "[]"); } catch { return []; }
@@ -273,18 +286,15 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         }
       }
 
-      if (matchedSuffix) {
-        const key = `-${matchedSuffix}`;
-        if (!acc[key]) acc[key] = { words: [], tier: 1 };
-        acc[key].words.push(wordObj);
-      } else {
-        if (!acc["Other"]) acc["Other"] = { words: [], tier: 2 };
-        acc["Other"].words.push(wordObj);
-      }
+      const key = matchedSuffix ? `-${matchedSuffix}` : "Other";
+      const effectiveKey = (matchedSuffix && hiddenSuffixGroups.has(key)) ? "Other" : key;
+
+      if (!acc[effectiveKey]) acc[effectiveKey] = { words: [], tier: effectiveKey === "Other" ? 2 : 1 };
+      acc[effectiveKey].words.push(wordObj);
 
       return acc;
     }, {} as Record<string, { words: any[], tier: number }>),
-  [prefixData.results, activeTacticalSuffixes]);
+  [prefixData.results, activeTacticalSuffixes, hiddenSuffixGroups]);
 
   const sortedPrefixSuffixes = useMemo(() =>
     Object.keys(groupedPrefix).sort((a, b) => {
@@ -756,6 +766,14 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                           <span className="opacity-50 font-medium">{groupedPrefix[suffix].words.length}</span>
                         </button>
                       ))}
+                      {hiddenSuffixGroups.size > 0 && (
+                        <button
+                          onClick={() => { setHiddenSuffixGroups(new Set()); localStorage.removeItem("sk_hidden_groups"); }}
+                          className="flex items-center gap-1 px-2 h-6 rounded border border-white/10 text-[9px] font-black text-white/30 hover:text-white/60 transition-colors uppercase"
+                        >
+                          {hiddenSuffixGroups.size} hidden · restore
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -811,6 +829,13 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                         </span>
                         <div className="h-[1px] w-12 bg-orange-500/10" />
                       </div>
+                      <button
+                        onClick={() => toggleHideGroup(suffix)}
+                        title={`Hide ${suffix} group`}
+                        className="p-1 rounded hover:bg-white/10 text-white/20 hover:text-white/60 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
                     </div>
                     <div className="flex flex-wrap gap-2 content-start">
                       {groupedPrefix[suffix].words.filter((wordObj: any) => !(hideRisky && isWordRisky(wordObj.word))).map((wordObj: any) => {

@@ -199,41 +199,43 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     if (cachedSuffix) setSuffixData(cachedSuffix);
     setIsSearching(!cachedPrefix);
 
-    abortRef.current?.abort();
-    abortRef.current = new AbortController();
-    const { signal } = abortRef.current;
-    const q = encodeURIComponent(raw);
-    const headers = { Authorization: `Bearer ${userId}` };
+    const timer = setTimeout(() => {
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
+      const { signal } = abortRef.current;
+      const q = encodeURIComponent(raw);
+      const headers = { Authorization: `Bearer ${userId}` };
 
-    fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(pData => {
-        if (!pData) return;
-        setPrefixData(pData);
-        setIsSearching(false);
-        setCache(prefixKey, pData);
-        if (pData.totalCount > 0) {
-          setSearchHistory(prev => {
-            const next = [raw, ...prev.filter(h => h !== raw)].slice(0, 8);
-            localStorage.setItem("sk_search_history", JSON.stringify(next));
-            return next;
-          });
-        }
-      })
-      .catch(err => { if (err?.name !== "AbortError") console.error(err); });
-
-    if (showSuffix) {
-      fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
+      fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
         .then(r => r.ok ? r.json() : null)
-        .then(sData => {
-          if (sData) { setSuffixData(sData); setCache(suffixKey, sData); }
+        .then(pData => {
+          if (!pData) return;
+          setPrefixData(pData);
+          setIsSearching(false);
+          setCache(prefixKey, pData);
+          if (pData.totalCount > 0) {
+            setSearchHistory(prev => {
+              const next = [raw, ...prev.filter(h => h !== raw)].slice(0, 8);
+              localStorage.setItem("sk_search_history", JSON.stringify(next));
+              return next;
+            });
+          }
         })
         .catch(err => { if (err?.name !== "AbortError") console.error(err); });
-    } else {
-      setSuffixData({ results: [], totalCount: 0, hasMore: false });
-    }
 
-    return () => { abortRef.current?.abort(); };
+      if (showSuffix) {
+        fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
+          .then(r => r.ok ? r.json() : null)
+          .then(sData => {
+            if (sData) { setSuffixData(sData); setCache(suffixKey, sData); }
+          })
+          .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+      } else {
+        setSuffixData({ results: [], totalCount: 0, hasMore: false });
+      }
+    }, 150);
+
+    return () => { clearTimeout(timer); abortRef.current?.abort(); };
   }, [search, userId, isTestingMode, showSuffix, searchMode]);
 
   // Normal mode: combo fetch (prefix + suffix intersection)
@@ -252,23 +254,25 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     if (cachedCombo) { setComboData(cachedCombo); setIsSearching(false); }
     else setIsSearching(true);
 
-    comboAbortRef.current?.abort();
-    comboAbortRef.current = new AbortController();
-    const { signal } = comboAbortRef.current;
-    const pParam = prefixSearch.trim() ? `&prefix=${encodeURIComponent(prefixSearch.trim())}` : "";
-    const sParam = suffixSearch.trim() ? `&suffix=${encodeURIComponent(suffixSearch.trim())}` : "";
+    const timer = setTimeout(() => {
+      comboAbortRef.current?.abort();
+      comboAbortRef.current = new AbortController();
+      const { signal } = comboAbortRef.current;
+      const pParam = prefixSearch.trim() ? `&prefix=${encodeURIComponent(prefixSearch.trim())}` : "";
+      const sParam = suffixSearch.trim() ? `&suffix=${encodeURIComponent(suffixSearch.trim())}` : "";
 
-    fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}`, {
-      headers: { Authorization: `Bearer ${userId}` },
-      signal,
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) { setComboData(data); setIsSearching(false); setCache(comboKey, data); }
+      fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}`, {
+        headers: { Authorization: `Bearer ${userId}` },
+        signal,
       })
-      .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) { setComboData(data); setIsSearching(false); setCache(comboKey, data); }
+        })
+        .catch(err => { if (err?.name !== "AbortError") console.error(err); });
+    }, 150);
 
-    return () => { comboAbortRef.current?.abort(); };
+    return () => { clearTimeout(timer); comboAbortRef.current?.abort(); };
   }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode]);
 
   const activeTacticalSuffixes = useMemo(() =>

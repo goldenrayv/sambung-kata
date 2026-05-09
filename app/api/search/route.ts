@@ -62,11 +62,18 @@ export async function GET(req: Request) {
       baseWhere.AND = [
         { word: { startsWith: prefixQ, mode: "insensitive" as const } },
         { word: { endsWith: suffixQ, mode: "insensitive" as const } },
+        { word: { not: { equals: prefixQ + suffixQ, mode: "insensitive" as const } } },
       ];
     } else if (prefixQ) {
-      baseWhere.word = { startsWith: prefixQ, mode: "insensitive" as const };
+      baseWhere.AND = [
+        { word: { startsWith: prefixQ, mode: "insensitive" as const } },
+        { word: { not: { equals: prefixQ, mode: "insensitive" as const } } },
+      ];
     } else {
-      baseWhere.word = { endsWith: suffixQ, mode: "insensitive" as const };
+      baseWhere.AND = [
+        { word: { endsWith: suffixQ, mode: "insensitive" as const } },
+        { word: { not: { equals: suffixQ, mode: "insensitive" as const } } },
+      ];
     }
 
     const rows = await prisma.word.findMany({
@@ -92,7 +99,7 @@ export async function GET(req: Request) {
     const baseWhere = {
       isActive: true,
       isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-      word: { startsWith: q, mode: "insensitive" as const },
+      word: { startsWith: q, mode: "insensitive" as const, not: { equals: q, mode: "insensitive" as const } },
     };
 
     // Run both queries in parallel: tactical-suffix words (no limit) + others (fill remaining)
@@ -132,8 +139,8 @@ export async function GET(req: Request) {
     isActive: true,
     isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
     word: mode === "suffix"
-      ? { endsWith: q, mode: "insensitive" as const }
-      : { contains: q, mode: "insensitive" as const }
+      ? { endsWith: q, mode: "insensitive" as const, not: { equals: q, mode: "insensitive" as const } }
+      : { contains: q, mode: "insensitive" as const, not: { equals: q, mode: "insensitive" as const } }
   };
 
   const results = await prisma.word.findMany({

@@ -717,7 +717,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {sortedComboLetters.length > 0 ? (
                 sortedComboLetters.map((letter) => (
-                  <div key={letter} className="space-y-3">
+                  <div key={letter} className="space-y-3" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
                     <div className="flex items-center gap-2 px-1">
                       <span className="text-xl font-black text-orange-400/80">{letter}</span>
                       <div className="h-[1px] flex-1 bg-orange-500/10" />
@@ -841,7 +841,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {sortedPrefixSuffixes.length > 0 ? (
                 sortedPrefixSuffixes.map((suffix: string) => (
-                  <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3">
+                  <div key={suffix} id={`prefix-group-${suffix}`} className="relative scroll-mt-60 space-y-3" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
                     <div className="flex items-center gap-2 px-1">
                       <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">
                         {suffix.toUpperCase()}
@@ -917,7 +917,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               <div className={`space-y-10 transition-opacity duration-150 ${isSearching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
                 {sortedSuffixLetters.length > 0 ? (
                   sortedSuffixLetters.map((letter) => (
-                    <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3">
+                    <div key={letter} id={`letter-${letter}`} className="relative scroll-mt-60 space-y-3" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 400px' }}>
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-orange-400/80 drop-shadow-[0_0_10px_rgba(251,146,60,0.1)]">{letter}</span>
                         <div className="h-[1px] flex-1 bg-orange-500/10" />

@@ -27,6 +27,13 @@ model Word {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // Postgres-managed:
+  //   ALTER TABLE "Word" ADD COLUMN word_rev text GENERATED ALWAYS AS (reverse(word)) STORED;
+  //   CHECK (word = UPPER(word))
+  //   indexes word_prefix_idx, word_rev_idx (text_pattern_ops, partial on isActive)
+  // Unsupported() makes Prisma aware of the column without exposing it on the client.
+  word_rev   Unsupported("text")?
+
   @@index([isActive, isVerified, word])
 }
 

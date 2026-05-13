@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const suffixCache = { data: null as string[] | null, ts: 0 };
@@ -23,6 +24,12 @@ async function getValidUser(userId: string) {
   return user;
 }
 
+type WordRow = { id: string; word: string; isVerified: string };
+
+function reverseStr(s: string): string {
+  return s.split("").reverse().join("");
+}
+
 export async function GET(req: Request) {
   // --- Auth: validate the userId ---
   const auth = req.headers.get("Authorization") ?? "";
@@ -45,6 +52,9 @@ export async function GET(req: Request) {
   const statusFilter = searchParams.get("status");
 
   const LIMIT = 2500;
+  const verifiedClause = statusFilter === "testing"
+    ? Prisma.sql`"isVerified" = 'unverified'`
+    : Prisma.sql`"isVerified" <> 'rejected'`;
 
   // Combo mode: words starting with `prefix` AND ending with `suffix`
   if (mode === "combo") {
@@ -53,28 +63,21 @@ export async function GET(req: Request) {
 
     if (!prefixQ && !suffixQ) return NextResponse.json({ results: [], totalCount: 0, hasMore: false });
 
-    const baseWhere: any = {
-      isActive: true,
-      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-    };
-
+    let filter: Prisma.Sql;
     if (prefixQ && suffixQ) {
-      baseWhere.AND = [
-        { word: { startsWith: prefixQ, mode: "insensitive" as const } },
-        { word: { endsWith: suffixQ, mode: "insensitive" as const } },
-      ];
+      filter = Prisma.sql`word LIKE ${prefixQ + "%"} AND word_rev LIKE ${reverseStr(suffixQ) + "%"}`;
     } else if (prefixQ) {
-      baseWhere.word = { startsWith: prefixQ, mode: "insensitive" as const };
+      filter = Prisma.sql`word LIKE ${prefixQ + "%"}`;
     } else {
-      baseWhere.word = { endsWith: suffixQ, mode: "insensitive" as const };
+      filter = Prisma.sql`word_rev LIKE ${reverseStr(suffixQ) + "%"}`;
     }
 
-    const rows = await prisma.word.findMany({
-      where: baseWhere,
-      select: { id: true, word: true, isVerified: true },
-      take: LIMIT + 1,
-      orderBy: { word: "asc" },
-    });
+    const rows = await prisma.$queryRaw<WordRow[]>`
+      SELECT id, word, "isVerified" FROM "Word"
+      WHERE "isActive" = true AND ${verifiedClause} AND ${filter}
+      ORDER BY word COLLATE "C" ASC
+      LIMIT ${LIMIT + 1}
+    `;
 
     const hasMore = rows.length > LIMIT;
     const finalResults = hasMore ? rows.slice(0, LIMIT) : rows;
@@ -85,35 +88,40 @@ export async function GET(req: Request) {
 
   if (mode === "prefix") {
     const ALL_MAGIC = await getTacticalSuffixes();
-    const suffixOR = ALL_MAGIC.length > 0
-      ? ALL_MAGIC.map(s => ({ word: { endsWith: s, mode: "insensitive" as const } }))
-      : undefined;
+    const baseWhere = Prisma.sql`"isActive" = true AND ${verifiedClause} AND word LIKE ${q + "%"}`;
 
-    const baseWhere = {
-      isActive: true,
-      isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-      word: { startsWith: q, mode: "insensitive" as const },
-    };
+    let suffixOr: Prisma.Sql | null = null;
+    if (ALL_MAGIC.length > 0) {
+      const parts = ALL_MAGIC.map(s => Prisma.sql`word_rev LIKE ${reverseStr(s) + "%"}`);
+      suffixOr = Prisma.sql`(${Prisma.join(parts, " OR ")})`;
+    }
 
     // Run both queries in parallel: tactical-suffix words (no limit) + others (fill remaining)
     const [strategicRows, otherRows] = await Promise.all([
-      prisma.word.findMany({
-        where: suffixOR ? { ...baseWhere, OR: suffixOR } : baseWhere,
-        select: { id: true, word: true, isVerified: true },
-        orderBy: { word: "asc" },
-      }),
-      suffixOR
-        ? prisma.word.findMany({
-            where: { ...baseWhere, NOT: suffixOR },
-            select: { id: true, word: true, isVerified: true },
-            take: LIMIT + 1,
-            orderBy: { word: "asc" },
-          })
-        : Promise.resolve([] as { id: string; word: string; isVerified: string }[]),
+      suffixOr
+        ? prisma.$queryRaw<WordRow[]>`
+            SELECT id, word, "isVerified" FROM "Word"
+            WHERE ${baseWhere} AND ${suffixOr}
+            ORDER BY word COLLATE "C" ASC
+          `
+        : Promise.resolve([] as WordRow[]),
+      suffixOr
+        ? prisma.$queryRaw<WordRow[]>`
+            SELECT id, word, "isVerified" FROM "Word"
+            WHERE ${baseWhere} AND NOT ${suffixOr}
+            ORDER BY word COLLATE "C" ASC
+            LIMIT ${LIMIT + 1}
+          `
+        : prisma.$queryRaw<WordRow[]>`
+            SELECT id, word, "isVerified" FROM "Word"
+            WHERE ${baseWhere}
+            ORDER BY word COLLATE "C" ASC
+            LIMIT ${LIMIT + 1}
+          `,
     ]);
 
     const remaining = LIMIT - strategicRows.length;
-    let results: typeof strategicRows;
+    let results: WordRow[];
     let hasMore: boolean;
 
     if (remaining <= 0) {
@@ -127,21 +135,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ results, totalCount: results.length, hasMore });
   }
 
-  // Suffix mode — fetch LIMIT+1 to detect hasMore without a count query
-  const whereClause = {
-    isActive: true,
-    isVerified: statusFilter === "testing" ? "unverified" : { not: "rejected" },
-    word: mode === "suffix"
-      ? { endsWith: q, mode: "insensitive" as const }
-      : { contains: q, mode: "insensitive" as const }
-  };
+  // Suffix mode hits word_rev_idx; contains falls back to scan (not exposed in UI).
+  const filter: Prisma.Sql = mode === "suffix"
+    ? Prisma.sql`word_rev LIKE ${reverseStr(q) + "%"}`
+    : Prisma.sql`word LIKE ${"%" + q + "%"}`;
 
-  const results = await prisma.word.findMany({
-    where: whereClause,
-    select: { id: true, word: true, isVerified: true },
-    take: LIMIT + 1,
-    orderBy: { word: "asc" },
-  });
+  const results = await prisma.$queryRaw<WordRow[]>`
+    SELECT id, word, "isVerified" FROM "Word"
+    WHERE "isActive" = true AND ${verifiedClause} AND ${filter}
+    ORDER BY word COLLATE "C" ASC
+    LIMIT ${LIMIT + 1}
+  `;
 
   const hasMore = results.length > LIMIT;
   const finalResults = hasMore ? results.slice(0, LIMIT) : results;

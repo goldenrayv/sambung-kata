@@ -63,16 +63,49 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const comboAbortRef = useRef<AbortController | null>(null);
 
   type CacheEntry = { results: any[]; totalCount: number; hasMore: boolean; ts: number };
-  const resultCache = useRef<Map<string, CacheEntry>>(new Map());
+  const CACHE_STORAGE_KEY = "sk_search_cache";
+  const CACHE_TTL = 5 * 60 * 1000;
+  const CACHE_MAX = 30;
+
+  const resultCache = useRef<Map<string, CacheEntry>>(
+    (() => {
+      if (typeof window === "undefined") return new Map();
+      try {
+        const raw = sessionStorage.getItem(CACHE_STORAGE_KEY);
+        if (!raw) return new Map();
+        const arr = JSON.parse(raw) as [string, CacheEntry][];
+        const now = Date.now();
+        return new Map(arr.filter(([, v]) => now - v.ts < CACHE_TTL));
+      } catch {
+        return new Map();
+      }
+    })()
+  );
+
+  const persistCache = () => {
+    if (typeof window === "undefined") return;
+    try {
+      sessionStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify([...resultCache.current]));
+    } catch {
+      // Quota exceeded — drop oldest half and retry once.
+      const entries = [...resultCache.current];
+      resultCache.current = new Map(entries.slice(Math.floor(entries.length / 2)));
+      try { sessionStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify([...resultCache.current])); } catch { /* give up */ }
+    }
+  };
 
   const getCached = (key: string) => {
     const entry = resultCache.current.get(key);
-    if (!entry || Date.now() - entry.ts > 5 * 60 * 1000) { resultCache.current.delete(key); return null; }
+    if (!entry || Date.now() - entry.ts > CACHE_TTL) {
+      if (entry) { resultCache.current.delete(key); persistCache(); }
+      return null;
+    }
     return entry;
   };
   const setCache = (key: string, data: { results: any[]; totalCount: number; hasMore: boolean }) => {
-    if (resultCache.current.size >= 50) resultCache.current.delete(resultCache.current.keys().next().value!);
+    if (resultCache.current.size >= CACHE_MAX) resultCache.current.delete(resultCache.current.keys().next().value!);
     resultCache.current.set(key, { ...data, ts: Date.now() });
+    persistCache();
   };
 
   // Focus shortcut: Tab or Cmd/Ctrl+K

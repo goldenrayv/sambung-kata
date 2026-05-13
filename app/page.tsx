@@ -5,6 +5,7 @@ import { loginUser, getWordCount, changePassword, getTacticalSuffixes, getAdminW
 import AuthScreen from "./_components/AuthScreen";
 import TopBar from "./_components/TopBar";
 import WordSearch from "./_components/WordSearch";
+import AnnouncementDialog from "./_components/AnnouncementDialog";
 import { toast } from "sonner";
 
 export default function Home() {
@@ -154,13 +155,14 @@ export default function Home() {
         expiresAt={user!.expiresAt}
         onLogout={handleLogout}
       />
-      <WordSearch 
-        userId={user!.id} 
-        wordCount={wordCount} 
+      <WordSearch
+        userId={user!.id}
+        wordCount={wordCount}
         wordStats={wordStats}
-        isSuperUser={user!.isSuperUser} 
+        isSuperUser={user!.isSuperUser}
         tacticalSuffixes={tacticalSuffixes}
       />
+      <AnnouncementDialog />
     </main>
   );
 }

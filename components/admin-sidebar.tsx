@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Book, ShieldCheck, Target, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Users, Book, ShieldCheck, Target, BarChart2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { adminLogout } from "@/app/actions";
 import { LogOut, Home } from "lucide-react";
@@ -14,6 +14,7 @@ const menuItems = [
   { name: "Bulk Verification", href: "/admin/bulk-verify", icon: ShieldCheck },
   { name: "Tactical Config", href: "/admin/tactical", icon: Target },
   { name: "Combo Analysis", href: "/admin/analysis", icon: BarChart2 },
+  { name: "Announcement", href: "/admin/announcements", icon: Megaphone },
 ];
 
 export function AdminSidebar() {

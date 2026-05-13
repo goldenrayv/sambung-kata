@@ -359,6 +359,58 @@ export async function changePassword(id: string, oldPassword: string, newPasswor
 
 
 // ---------------------------------------------------------------------------
+// Announcement — singleton-style banner
+// ---------------------------------------------------------------------------
+export async function getActiveAnnouncement() {
+  const row = await prisma.announcement.findFirst({
+    where: { isActive: true },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, title: true, body: true, updatedAt: true },
+  });
+  if (!row) return null;
+  return { ...row, updatedAt: row.updatedAt.toISOString() };
+}
+
+export async function getLatestAnnouncement() {
+  const row = await prisma.announcement.findFirst({
+    orderBy: { updatedAt: "desc" },
+  });
+  if (!row) return null;
+  return {
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+export async function saveAnnouncement(formData: FormData) {
+  const title = (formData.get("title") as string)?.trim();
+  const body = (formData.get("body") as string)?.trim();
+  const isActive = formData.get("isActive") === "on";
+
+  if (!title || !body) {
+    return { success: false, error: "Title and body are required" };
+  }
+
+  const existing = await prisma.announcement.findFirst({ orderBy: { updatedAt: "desc" } });
+
+  if (existing) {
+    await prisma.announcement.update({
+      where: { id: existing.id },
+      data: { title, body, isActive },
+    });
+  } else {
+    await prisma.announcement.create({
+      data: { title, body, isActive },
+    });
+  }
+
+  revalidatePath("/admin/announcements");
+  revalidatePath("/");
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
 // Admin session management
 // ---------------------------------------------------------------------------
 export async function adminLogout() {

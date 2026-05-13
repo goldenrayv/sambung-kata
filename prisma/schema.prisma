@@ -45,4 +45,13 @@ model TacticalSuffix {
   updatedAt DateTime @updatedAt
 }
 
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 

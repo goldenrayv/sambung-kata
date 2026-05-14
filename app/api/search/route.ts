@@ -56,6 +56,14 @@ export async function GET(req: Request) {
     ? Prisma.sql`"isVerified" = 'unverified'`
     : Prisma.sql`"isVerified" <> 'rejected'`;
 
+  // Sort directive — pushed into ORDER BY so LIMIT slices the right subset.
+  const sortParam = searchParams.get("sort");
+  const orderBy = sortParam === "short"
+    ? Prisma.sql`LENGTH(word) ASC, word COLLATE "C" ASC`
+    : sortParam === "long"
+      ? Prisma.sql`LENGTH(word) DESC, word COLLATE "C" ASC`
+      : Prisma.sql`word COLLATE "C" ASC`;
+
   // Combo mode: words starting with `prefix` AND ending with `suffix`
   if (mode === "combo") {
     const prefixQ = (searchParams.get("prefix") ?? "").trim().toUpperCase();
@@ -75,7 +83,7 @@ export async function GET(req: Request) {
     const rows = await prisma.$queryRaw<WordRow[]>`
       SELECT id, word, "isVerified" FROM "Word"
       WHERE "isActive" = true AND ${verifiedClause} AND ${filter}
-      ORDER BY word COLLATE "C" ASC
+      ORDER BY ${orderBy}
       LIMIT ${LIMIT + 1}
     `;
 
@@ -87,6 +95,21 @@ export async function GET(req: Request) {
   if (!q) return NextResponse.json([]);
 
   if (mode === "prefix") {
+    const trapMode = searchParams.get("trap") !== "off";
+
+    // Trap OFF: plain prefix scan, no strategic-suffix priority.
+    if (!trapMode) {
+      const rows = await prisma.$queryRaw<WordRow[]>`
+        SELECT id, word, "isVerified" FROM "Word"
+        WHERE "isActive" = true AND ${verifiedClause} AND word LIKE ${q + "%"}
+        ORDER BY ${orderBy}
+        LIMIT ${LIMIT + 1}
+      `;
+      const hasMore = rows.length > LIMIT;
+      const finalResults = hasMore ? rows.slice(0, LIMIT) : rows;
+      return NextResponse.json({ results: finalResults, totalCount: finalResults.length, hasMore });
+    }
+
     const ALL_MAGIC = await getTacticalSuffixes();
     const baseWhere = Prisma.sql`"isActive" = true AND ${verifiedClause} AND word LIKE ${q + "%"}`;
 
@@ -102,20 +125,20 @@ export async function GET(req: Request) {
         ? prisma.$queryRaw<WordRow[]>`
             SELECT id, word, "isVerified" FROM "Word"
             WHERE ${baseWhere} AND ${suffixOr}
-            ORDER BY word COLLATE "C" ASC
+            ORDER BY ${orderBy}
           `
         : Promise.resolve([] as WordRow[]),
       suffixOr
         ? prisma.$queryRaw<WordRow[]>`
             SELECT id, word, "isVerified" FROM "Word"
             WHERE ${baseWhere} AND NOT ${suffixOr}
-            ORDER BY word COLLATE "C" ASC
+            ORDER BY ${orderBy}
             LIMIT ${LIMIT + 1}
           `
         : prisma.$queryRaw<WordRow[]>`
             SELECT id, word, "isVerified" FROM "Word"
             WHERE ${baseWhere}
-            ORDER BY word COLLATE "C" ASC
+            ORDER BY ${orderBy}
             LIMIT ${LIMIT + 1}
           `,
     ]);
@@ -143,7 +166,7 @@ export async function GET(req: Request) {
   const results = await prisma.$queryRaw<WordRow[]>`
     SELECT id, word, "isVerified" FROM "Word"
     WHERE "isActive" = true AND ${verifiedClause} AND ${filter}
-    ORDER BY word COLLATE "C" ASC
+    ORDER BY ${orderBy}
     LIMIT ${LIMIT + 1}
   `;
 

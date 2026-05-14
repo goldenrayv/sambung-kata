@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff, ArrowDownAZ, ArrowDownNarrowWide, ArrowDownWideNarrow } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff, ArrowDownAZ, ArrowDownNarrowWide, ArrowDownWideNarrow, Crosshair } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -58,6 +58,20 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   });
   const [dangerousTails, setDangerousTails] = useState<Set<string>>(new Set());
   const [isDangerousLoading, setIsDangerousLoading] = useState(false);
+
+  // Trap Mode: when ON, server applies strategic-suffix priority + client groups by tactical suffix.
+  // When OFF, plain alphabetical prefix results, no tactical grouping. Default ON.
+  const [isTrapMode, setIsTrapMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("sk_trap_mode") !== "off";
+  });
+  const toggleTrapMode = () => {
+    setIsTrapMode(prev => {
+      const next = !prev;
+      localStorage.setItem("sk_trap_mode", next ? "on" : "off");
+      return next;
+    });
+  };
 
   type SortMode = "none" | "asc" | "desc";
   const [sortByLength, setSortByLength] = useState<SortMode>(() => {
@@ -244,8 +258,11 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
     const raw = search.trim();
     const status = isTestingMode ? 'testing' : 'all';
-    const prefixKey = `p:${raw.toUpperCase()}:${status}`;
-    const suffixKey = `s:${raw.toUpperCase()}:${status}`;
+    const trapTag = isTrapMode ? "T" : "t";
+    const sortTag = sortByLength === "asc" ? "S" : sortByLength === "desc" ? "L" : "A";
+    const sortParam = sortByLength === "asc" ? "&sort=short" : sortByLength === "desc" ? "&sort=long" : "";
+    const prefixKey = `p:${raw.toUpperCase()}:${status}:${trapTag}:${sortTag}`;
+    const suffixKey = `s:${raw.toUpperCase()}:${status}:${sortTag}`;
 
     const cachedPrefix = getCached(prefixKey);
     const cachedSuffix = showSuffix ? getCached(suffixKey) : null;
@@ -261,7 +278,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       const q = encodeURIComponent(raw);
       const headers = { Authorization: `Bearer ${userId}` };
 
-      fetch(`/api/search?q=${q}&mode=prefix&status=${status}`, { headers, signal })
+      fetch(`/api/search?q=${q}&mode=prefix&status=${status}${isTrapMode ? "" : "&trap=off"}${sortParam}`, { headers, signal })
         .then(r => r.ok ? r.json() : null)
         .then(pData => {
           if (!pData) return;
@@ -279,7 +296,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         .catch(err => { if (err?.name !== "AbortError") console.error(err); });
 
       if (showSuffix) {
-        fetch(`/api/search?q=${q}&mode=suffix&status=${status}`, { headers, signal })
+        fetch(`/api/search?q=${q}&mode=suffix&status=${status}${sortParam}`, { headers, signal })
           .then(r => r.ok ? r.json() : null)
           .then(sData => {
             if (sData) { setSuffixData(sData); setCache(suffixKey, sData); }
@@ -291,7 +308,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }, 150);
 
     return () => { clearTimeout(timer); abortRef.current?.abort(); };
-  }, [search, userId, isTestingMode, showSuffix, searchMode]);
+  }, [search, userId, isTestingMode, showSuffix, searchMode, isTrapMode, sortByLength]);
 
   // Normal mode: combo fetch (prefix + suffix intersection)
   useEffect(() => {
@@ -304,7 +321,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
 
     const status = isTestingMode ? 'testing' : 'all';
-    const comboKey = `c:${prefixSearch.trim().toUpperCase()}:${suffixSearch.trim().toUpperCase()}:${status}`;
+    const sortTag = sortByLength === "asc" ? "S" : sortByLength === "desc" ? "L" : "A";
+    const sortParam = sortByLength === "asc" ? "&sort=short" : sortByLength === "desc" ? "&sort=long" : "";
+    const comboKey = `c:${prefixSearch.trim().toUpperCase()}:${suffixSearch.trim().toUpperCase()}:${status}:${sortTag}`;
     const cachedCombo = getCached(comboKey);
     if (cachedCombo) { setComboData(cachedCombo); setIsSearching(false); }
     else setIsSearching(true);
@@ -316,7 +335,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       const pParam = prefixSearch.trim() ? `&prefix=${encodeURIComponent(prefixSearch.trim())}` : "";
       const sParam = suffixSearch.trim() ? `&suffix=${encodeURIComponent(suffixSearch.trim())}` : "";
 
-      fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}`, {
+      fetch(`/api/search?mode=combo&status=${status}${pParam}${sParam}${sortParam}`, {
         headers: { Authorization: `Bearer ${userId}` },
         signal,
       })
@@ -328,13 +347,17 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }, 150);
 
     return () => { clearTimeout(timer); comboAbortRef.current?.abort(); };
-  }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode]);
+  }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode, sortByLength]);
 
   const activeTacticalSuffixes = useMemo(() =>
     isBrutalMode ? tacticalSuffixes : tacticalSuffixes.filter(ts => ts.suffix.length <= 3),
   [tacticalSuffixes, isBrutalMode]);
 
   const groupedPrefix = useMemo(() => {
+    // Trap OFF: flat results, single group.
+    if (!isTrapMode) {
+      return { All: { words: applyLengthSort(prefixData.results), tier: 1 } } as Record<string, { words: any[]; tier: number }>;
+    }
     const acc = prefixData.results.reduce((acc: Record<string, { words: any[], tier: number }>, wordObj: any) => {
       const word = (wordObj.word || wordObj).toUpperCase();
 
@@ -359,7 +382,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
     return acc;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefixData.results, activeTacticalSuffixes, hiddenSuffixGroups, sortByLength]);
+  }, [prefixData.results, activeTacticalSuffixes, hiddenSuffixGroups, sortByLength, isTrapMode]);
 
   const sortedPrefixSuffixes = useMemo(() =>
     Object.keys(groupedPrefix).sort((a, b) => {
@@ -563,6 +586,22 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </button>
 
             <button
+              onClick={() => searchMode === "fast" && toggleTrapMode()}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Trap Mode — Fast mode only" : (isTrapMode ? "Trap Mode: ON — tactical grouping & priority" : "Trap Mode: OFF — plain alphabetical results")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : isTrapMode
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <Crosshair className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Trap
+            </button>
+
+            <button
               onClick={() => searchMode === "fast" && setIsHideMode(!isHideMode)}
               disabled={searchMode !== "fast"}
               title={searchMode !== "fast" ? "Hide Mode — Fast mode only" : (isHideMode ? "Hide Mode: ON — click a suffix chip to hide its group" : "Hide Mode: OFF")}
@@ -677,6 +716,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       {/* Suffix chips + search history — fast mode only */}
       {searchMode === "fast" && (
         <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
+          {isTrapMode && (
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide lg:flex-wrap lg:overflow-visible lg:pb-0">
             {(isBlockMode || isHideMode) && (
               <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
@@ -719,6 +759,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
               );
             })}
           </div>
+          )}
 
           {searchHistory.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">

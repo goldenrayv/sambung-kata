@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff, ArrowDownAZ, ArrowDownNarrowWide, ArrowDownWideNarrow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -58,6 +58,28 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   });
   const [dangerousTails, setDangerousTails] = useState<Set<string>>(new Set());
   const [isDangerousLoading, setIsDangerousLoading] = useState(false);
+
+  type SortMode = "none" | "asc" | "desc";
+  const [sortByLength, setSortByLength] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "none";
+    const saved = localStorage.getItem("sk_sort_by_length");
+    return saved === "asc" || saved === "desc" ? saved : "none";
+  });
+  const cycleSortByLength = () => {
+    setSortByLength(prev => {
+      const next: SortMode = prev === "none" ? "asc" : prev === "asc" ? "desc" : "none";
+      localStorage.setItem("sk_sort_by_length", next);
+      return next;
+    });
+  };
+  const applyLengthSort = (words: any[]): any[] => {
+    if (sortByLength === "none") return words;
+    return [...words].sort((a, b) => {
+      const la = (a.word || a).length;
+      const lb = (b.word || b).length;
+      return sortByLength === "asc" ? la - lb : lb - la;
+    });
+  };
 
   const abortRef = useRef<AbortController | null>(null);
   const comboAbortRef = useRef<AbortController | null>(null);
@@ -312,8 +334,8 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     isBrutalMode ? tacticalSuffixes : tacticalSuffixes.filter(ts => ts.suffix.length <= 3),
   [tacticalSuffixes, isBrutalMode]);
 
-  const groupedPrefix = useMemo(() =>
-    prefixData.results.reduce((acc: Record<string, { words: any[], tier: number }>, wordObj: any) => {
+  const groupedPrefix = useMemo(() => {
+    const acc = prefixData.results.reduce((acc: Record<string, { words: any[], tier: number }>, wordObj: any) => {
       const word = (wordObj.word || wordObj).toUpperCase();
 
       let matchedSuffix = null;
@@ -331,8 +353,13 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       acc[effectiveKey].words.push(wordObj);
 
       return acc;
-    }, {} as Record<string, { words: any[], tier: number }>),
-  [prefixData.results, activeTacticalSuffixes, hiddenSuffixGroups]);
+    }, {} as Record<string, { words: any[], tier: number }>);
+    if (sortByLength !== "none") {
+      for (const k of Object.keys(acc)) acc[k] = { ...acc[k], words: applyLengthSort(acc[k].words) };
+    }
+    return acc;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefixData.results, activeTacticalSuffixes, hiddenSuffixGroups, sortByLength]);
 
   const sortedPrefixSuffixes = useMemo(() =>
     Object.keys(groupedPrefix).sort((a, b) => {
@@ -346,29 +373,39 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }),
   [groupedPrefix]);
 
-  const groupedSuffix = useMemo(() =>
-    suffixData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
+  const groupedSuffix = useMemo(() => {
+    const acc = suffixData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
       const word = wordObj.word || wordObj;
       const letter = word[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
-    }, {} as Record<string, any[]>),
-  [suffixData.results]);
+    }, {} as Record<string, any[]>);
+    if (sortByLength !== "none") {
+      for (const k of Object.keys(acc)) acc[k] = applyLengthSort(acc[k]);
+    }
+    return acc;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suffixData.results, sortByLength]);
 
   const sortedSuffixLetters = useMemo(() =>
     Object.keys(groupedSuffix).sort(),
   [groupedSuffix]);
 
   // Combo results: group by first letter alphabetically
-  const groupedCombo = useMemo(() =>
-    comboData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
+  const groupedCombo = useMemo(() => {
+    const acc = comboData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
       const letter = (wordObj.word || wordObj)[0].toUpperCase();
       if (!acc[letter]) acc[letter] = [];
       acc[letter].push(wordObj);
       return acc;
-    }, {} as Record<string, any[]>),
-  [comboData.results]);
+    }, {} as Record<string, any[]>);
+    if (sortByLength !== "none") {
+      for (const k of Object.keys(acc)) acc[k] = applyLengthSort(acc[k]);
+    }
+    return acc;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comboData.results, sortByLength]);
 
   const sortedComboLetters = useMemo(() =>
     Object.keys(groupedCombo).sort(),
@@ -539,6 +576,23 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             >
               <EyeOff className="w-3.5 h-3.5 md:w-3 md:h-3" />
               Hide
+            </button>
+
+            <button
+              onClick={cycleSortByLength}
+              title={`Sort: ${sortByLength === "none" ? "A-Z (alphabetical)" : sortByLength === "asc" ? "Shortest first" : "Longest first"} — click to cycle`}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                sortByLength !== "none"
+                  ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                  : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              {sortByLength === "none"
+                ? <ArrowDownAZ className="w-3.5 h-3.5 md:w-3 md:h-3" />
+                : sortByLength === "asc"
+                  ? <ArrowDownNarrowWide className="w-3.5 h-3.5 md:w-3 md:h-3" />
+                  : <ArrowDownWideNarrow className="w-3.5 h-3.5 md:w-3 md:h-3" />}
+              {sortByLength === "none" ? "A-Z" : sortByLength === "asc" ? "Short" : "Long"}
             </button>
           </div>
 

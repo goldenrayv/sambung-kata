@@ -426,129 +426,155 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       <div className="sticky top-20 z-20 -mx-4 px-4 pb-3 bg-neutral-950/80 backdrop-blur-md border-b border-white/5 shadow-2xl">
         <div className="max-w-4xl mx-auto pt-3 space-y-2">
 
-          {/* Toolbar row */}
-          <div className="w-full relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
-            <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50">
-              <div className="flex items-center px-3 py-2.5 gap-2">
+          {/* Toolbar row: Fast/Normal segmented control + filter pills. Wraps on mobile, single row on lg+. */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-1">
 
-                {/* Fast/Normal toggle */}
-                <button
-                  onClick={() => setSearchMode(m => m === "fast" ? "normal" : "fast")}
-                  title={searchMode === "fast" ? "Fast Mode — click for Normal Mode (prefix + suffix combined)" : "Normal Mode — click for Fast Mode"}
-                  className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                    searchMode === "fast"
-                      ? "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
-                      : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                  }`}
-                >
-                  <Zap className="w-4 h-4" />
-                </button>
+            {/* Fast/Normal segmented control */}
+            <div className="flex bg-neutral-900 border border-white/10 rounded-lg p-0.5 shrink-0 shadow-inner">
+              <button
+                onClick={() => setSearchMode("fast")}
+                title="Fast Mode — single search bar drives prefix + suffix"
+                className={`flex items-center gap-1.5 px-3 py-1.5 md:px-2.5 md:py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                  searchMode === "fast"
+                    ? "bg-orange-500/15 text-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.15)]"
+                    : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 md:w-3 md:h-3" />
+                Fast
+              </button>
+              <button
+                onClick={() => setSearchMode("normal")}
+                title="Normal Mode — separate prefix + suffix inputs"
+                className={`flex items-center gap-1.5 px-3 py-1.5 md:px-2.5 md:py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition-all ${
+                  searchMode === "normal"
+                    ? "bg-orange-500/15 text-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.15)]"
+                    : "text-white/40 hover:text-white/70"
+                }`}
+              >
+                Normal
+              </button>
+            </div>
 
-                {/* Show/hide suffix — fast mode only */}
-                {searchMode === "fast" && (
-                  <button
-                    onClick={() => setShowSuffix(!showSuffix)}
-                    title={showSuffix ? "Hide Suffix Results" : "Show Suffix Results"}
-                    className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                      showSuffix
-                        ? "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                        : "bg-orange-500/10 border border-orange-500/30 text-orange-400 font-bold"
-                    }`}
-                  >
-                    {showSuffix ? <Columns className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
-                  </button>
-                )}
+            {/* Divider — hidden when wrapping on mobile */}
+            <div className="hidden md:block h-5 w-px bg-white/10 shrink-0 mx-0.5" />
 
-                <button
-                  onClick={() => setIsTestingMode(!isTestingMode)}
-                  title={isTestingMode ? "Testing Mode: Only Unverified Words" : "Normal Mode: All Words"}
-                  className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                    isTestingMode
-                      ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
-                      : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                  }`}
-                >
-                  <Beaker className="w-4 h-4" />
-                </button>
+            {/* Filter pills */}
+            <button
+              onClick={() => setIsTestingMode(!isTestingMode)}
+              title={isTestingMode ? "Testing Mode: only unverified words" : "Show all words"}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                isTestingMode
+                  ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                  : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <Beaker className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Testing
+            </button>
 
-                {searchMode === "fast" && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setIsBlockMode(!isBlockMode);
-                        if (isBlockMode) setBlockedSuffixes(new Set());
-                      }}
-                      title={isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF"}
-                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                        isBlockMode
-                          ? "bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold"
-                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                      }`}
-                    >
-                      <ShieldOff className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setIsBrutalMode(!isBrutalMode)}
-                      title={isBrutalMode ? "Brutal Mode: ON — showing long suffixes" : "Brutal Mode: OFF — click to show suffixes longer than 3 chars"}
-                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                        isBrutalMode
-                          ? "bg-red-700/20 border border-red-700/40 text-red-400 font-bold"
-                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                      }`}
-                    >
-                      <Swords className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setIsHideMode(!isHideMode)}
-                      title={isHideMode ? "Hide Mode: ON — click a suffix chip to hide its group" : "Hide Mode: OFF — click to configure hidden suffix groups"}
-                      className={`p-1.5 rounded-md transition-all duration-300 shrink-0 ${
-                        isHideMode
-                          ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 font-bold"
-                          : "bg-white/5 border border-white/10 text-white/40 hover:text-white"
-                      }`}
-                    >
-                      <EyeOff className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
+            <button
+              onClick={() => searchMode === "fast" && setShowSuffix(!showSuffix)}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Suffix panel — Fast mode only" : (showSuffix ? "Suffix panel: shown" : "Suffix panel: hidden")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : showSuffix
+                    ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              {showSuffix ? <Columns className="w-3.5 h-3.5 md:w-3 md:h-3" /> : <Layout className="w-3.5 h-3.5 md:w-3 md:h-3" />}
+              Suffix
+            </button>
 
-                {/* Fast mode: single input */}
-                {searchMode === "fast" && (
-                  <>
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search..."
-                      className="flex-1 bg-transparent text-lg font-bold text-white placeholder-white/30 border-none outline-none ring-0 shadow-none p-0 h-auto italic min-w-0"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      autoFocus
-                    />
-                    <div className="flex items-center gap-2 shrink-0">
-                      {search && (
-                        <button
-                          onClick={() => setSearch("")}
-                          className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                      <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/20 bg-white/5 text-[10px] font-black text-white/50 select-none">
-                        <Command className="w-2.5 h-2.5" />
-                        <span>K</span>
-                      </div>
+            <button
+              onClick={() => {
+                if (searchMode !== "fast") return;
+                setIsBlockMode(!isBlockMode);
+                if (isBlockMode) setBlockedSuffixes(new Set());
+              }}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Strategy Block — Fast mode only" : (isBlockMode ? "Strategy Block: ON — click to disable & clear" : "Strategy Block: OFF")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : isBlockMode
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <ShieldOff className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Block
+            </button>
+
+            <button
+              onClick={() => searchMode === "fast" && setIsBrutalMode(!isBrutalMode)}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Brutal Mode — Fast mode only" : (isBrutalMode ? "Brutal Mode: ON — showing long suffixes" : "Brutal Mode: OFF")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : isBrutalMode
+                    ? "bg-red-700/20 border-red-700/40 text-red-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <Swords className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Brutal
+            </button>
+
+            <button
+              onClick={() => searchMode === "fast" && setIsHideMode(!isHideMode)}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Hide Mode — Fast mode only" : (isHideMode ? "Hide Mode: ON — click a suffix chip to hide its group" : "Hide Mode: OFF")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : isHideMode
+                    ? "bg-sky-500/10 border-sky-500/30 text-sky-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <EyeOff className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Hide
+            </button>
+          </div>
+
+          {/* Fast mode: clean single search bar */}
+          {searchMode === "fast" && (
+            <div className="w-full relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-rose-500/20 via-orange-500/20 to-rose-500/20 rounded-xl blur opacity-0 group-focus-within:opacity-100 transition duration-500" />
+              <div className="relative bg-neutral-900 border border-white/10 rounded-xl shadow-2xl transition-all duration-300 focus-within:border-rose-500/50">
+                <div className="flex items-center px-4 py-3 gap-2">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search..."
+                    className="flex-1 bg-transparent text-lg font-bold text-white placeholder-white/30 border-none outline-none ring-0 shadow-none p-0 h-auto italic min-w-0"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 shrink-0">
+                    {search && (
+                      <button
+                        onClick={() => setSearch("")}
+                        className="p-1 hover:bg-white/10 rounded-md transition-colors text-white/40 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    <div className="hidden sm:flex items-center gap-1 px-1.5 py-1 rounded border border-white/20 bg-white/5 text-[10px] font-black text-white/50 select-none">
+                      <Command className="w-2.5 h-2.5" />
+                      <span>K</span>
                     </div>
-                  </>
-                )}
-
-                {/* Normal mode label */}
-                {searchMode === "normal" && (
-                  <span className="flex-1 text-[10px] font-black text-white/30 uppercase tracking-widest italic">Normal Mode</span>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Normal mode: two inputs */}
           {searchMode === "normal" && (

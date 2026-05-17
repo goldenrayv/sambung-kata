@@ -31,7 +31,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [suffixData, setSuffixData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
   const [comboData, setComboData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
   const [isSearching, setIsSearching] = useState(false);
-  const [showSuffix, setShowSuffix] = useState(true);
+  const [showSuffix, setShowSuffix] = useState(false);
   const [isTestingMode, setIsTestingMode] = useState(false);
   const [isBlockMode, setIsBlockMode] = useState(false);
   const [isBrutalMode, setIsBrutalMode] = useState(false);
@@ -156,6 +156,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       ) {
         e.preventDefault();
         activeInput?.focus();
+        activeInput?.select();
       }
     };
 

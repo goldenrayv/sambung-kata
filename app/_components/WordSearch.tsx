@@ -718,7 +718,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       {searchMode === "fast" && (
         <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
           {isTrapMode && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide lg:flex-wrap lg:overflow-visible lg:pb-0">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin lg:flex-wrap lg:overflow-visible lg:pb-0">
             {(isBlockMode || isHideMode) && (
               <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
                 {isHideMode ? "Hide:" : "Block:"}

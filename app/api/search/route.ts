@@ -52,9 +52,11 @@ export async function GET(req: Request) {
   const statusFilter = searchParams.get("status");
 
   const LIMIT = 2500;
-  const verifiedClause = statusFilter === "testing"
+  const verifiedClause = statusFilter === "unverified"
     ? Prisma.sql`"isVerified" = 'unverified'`
-    : Prisma.sql`"isVerified" <> 'rejected'`;
+    : statusFilter === "verified"
+      ? Prisma.sql`"isVerified" = 'verified'`
+      : Prisma.sql`"isVerified" <> 'rejected'`;
 
   // Sort directive — pushed into ORDER BY so LIMIT slices the right subset.
   const sortParam = searchParams.get("sort");

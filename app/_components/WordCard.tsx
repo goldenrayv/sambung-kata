@@ -1,5 +1,5 @@
 "use client";
-import { Trash2, Check } from "lucide-react";
+import { Trash2, Check, Undo2 } from "lucide-react";
 
 interface Props {
   word: string;
@@ -53,10 +53,16 @@ export default function WordCard({ word, search = "", searchMode = "prefix", isS
                   e.stopPropagation();
                   onAccept();
                 }}
-                className="p-1 hover:bg-emerald-500/20 rounded-md text-emerald-500 transition-colors"
-                title="Accept"
+                className={`p-1 rounded-md transition-colors ${
+                  isVerified === "verified"
+                    ? "hover:bg-orange-500/20 text-orange-400"
+                    : "hover:bg-emerald-500/20 text-emerald-500"
+                }`}
+                title={isVerified === "verified" ? "Un-verify (revert to unverified)" : "Accept"}
               >
-                <Check className="w-3.5 h-3.5" />
+                {isVerified === "verified"
+                  ? <Undo2 className="w-3.5 h-3.5" />
+                  : <Check className="w-3.5 h-3.5" />}
               </button>
             )}
             {onDelete && (

@@ -32,7 +32,19 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const [comboData, setComboData] = useState<{ results: any[], totalCount: number, hasMore: boolean }>({ results: [], totalCount: 0, hasMore: false });
   const [isSearching, setIsSearching] = useState(false);
   const [showSuffix, setShowSuffix] = useState(false);
-  const [isTestingMode, setIsTestingMode] = useState(false);
+  type TestingFilter = "all" | "unverified" | "verified";
+  const [testingFilter, setTestingFilter] = useState<TestingFilter>(() => {
+    if (typeof window === "undefined") return "all";
+    const saved = localStorage.getItem("sk_testing_filter");
+    return saved === "unverified" || saved === "verified" ? saved : "all";
+  });
+  const cycleTestingFilter = () => {
+    setTestingFilter(prev => {
+      const next: TestingFilter = prev === "all" ? "unverified" : prev === "unverified" ? "verified" : "all";
+      localStorage.setItem("sk_testing_filter", next);
+      return next;
+    });
+  };
   const [isBlockMode, setIsBlockMode] = useState(false);
   const [isBrutalMode, setIsBrutalMode] = useState(false);
   const [isHideMode, setIsHideMode] = useState(false);
@@ -216,19 +228,19 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   };
 
   const handleVerifyWord = async (id: string, currentStatus?: string) => {
-    if (currentStatus === "verified") return;
-
-    const result = await toggleWordVerification(id, "unverified");
+    const wasVerified = currentStatus === "verified";
+    const result = await toggleWordVerification(id, currentStatus || "unverified");
     if (result.success) {
-      toast.success("Word verified! ✨");
+      const newStatus = wasVerified ? "unverified" : "verified";
+      toast.success(wasVerified ? "Word un-verified" : "Word verified! ✨");
       const updateList = (list: any[]) => list.map(item =>
-        item.id === id ? { ...item, isVerified: "verified" } : item
+        item.id === id ? { ...item, isVerified: newStatus } : item
       );
       setPrefixData(prev => ({ ...prev, results: updateList(prev.results) }));
       setSuffixData(prev => ({ ...prev, results: updateList(prev.results) }));
       setComboData(prev => ({ ...prev, results: updateList(prev.results) }));
     } else {
-      toast.error("Failed to verify word");
+      toast.error(wasVerified ? "Failed to un-verify word" : "Failed to verify word");
     }
   };
 
@@ -258,7 +270,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }
 
     const raw = search.trim();
-    const status = isTestingMode ? 'testing' : 'all';
+    const status = testingFilter;
     const trapTag = isTrapMode ? "T" : "t";
     const sortTag = sortByLength === "asc" ? "S" : sortByLength === "desc" ? "L" : "A";
     const sortParam = sortByLength === "asc" ? "&sort=short" : sortByLength === "desc" ? "&sort=long" : "";
@@ -309,7 +321,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }, 150);
 
     return () => { clearTimeout(timer); abortRef.current?.abort(); };
-  }, [search, userId, isTestingMode, showSuffix, searchMode, isTrapMode, sortByLength]);
+  }, [search, userId, testingFilter, showSuffix, searchMode, isTrapMode, sortByLength]);
 
   // Normal mode: combo fetch (prefix + suffix intersection)
   useEffect(() => {
@@ -321,7 +333,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       return;
     }
 
-    const status = isTestingMode ? 'testing' : 'all';
+    const status = testingFilter;
     const sortTag = sortByLength === "asc" ? "S" : sortByLength === "desc" ? "L" : "A";
     const sortParam = sortByLength === "asc" ? "&sort=short" : sortByLength === "desc" ? "&sort=long" : "";
     const comboKey = `c:${prefixSearch.trim().toUpperCase()}:${suffixSearch.trim().toUpperCase()}:${status}:${sortTag}`;
@@ -348,7 +360,7 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     }, 150);
 
     return () => { clearTimeout(timer); comboAbortRef.current?.abort(); };
-  }, [prefixSearch, suffixSearch, userId, isTestingMode, searchMode, sortByLength]);
+  }, [prefixSearch, suffixSearch, userId, testingFilter, searchMode, sortByLength]);
 
   const activeTacticalSuffixes = useMemo(() =>
     isBrutalMode ? tacticalSuffixes : tacticalSuffixes.filter(ts => ts.suffix.length <= 3),
@@ -522,16 +534,18 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
 
             {/* Filter pills */}
             <button
-              onClick={() => setIsTestingMode(!isTestingMode)}
-              title={isTestingMode ? "Testing Mode: only unverified words" : "Show all words"}
+              onClick={cycleTestingFilter}
+              title={`Filter: ${testingFilter === "all" ? "All non-rejected words" : testingFilter === "unverified" ? "Only unverified words" : "Only verified words"} — click to cycle`}
               className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
-                isTestingMode
-                  ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                  : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+                testingFilter === "unverified"
+                  ? "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                  : testingFilter === "verified"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
               }`}
             >
               <Beaker className="w-3.5 h-3.5 md:w-3 md:h-3" />
-              Testing
+              {testingFilter === "all" ? "All" : testingFilter === "unverified" ? "Unverified" : "Verified"}
             </button>
 
             <button

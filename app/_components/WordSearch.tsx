@@ -10,7 +10,7 @@ import { toast } from "sonner";
 interface Props {
   userId: string;
   wordCount: number;
-  wordStats: { verified: number; unverified: number; rejected: number; };
+  wordStats: { verified: number; unverified: number; rejected: number; verifiedToday?: number; rejectedToday?: number; };
   isSuperUser: boolean;
   tacticalSuffixes: any[];
 }
@@ -483,6 +483,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
           <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/[0.12]">
             <div className="text-[7px] lg:text-[8px] font-black text-emerald-400/60 uppercase tracking-widest">Verified</div>
             <div className="text-lg lg:text-3xl font-black text-emerald-400 tracking-tighter leading-none">{wordStats.verified.toLocaleString()}</div>
+            <div className={`text-[7px] lg:text-[9px] font-black uppercase tracking-widest leading-none ${(wordStats.verifiedToday ?? 0) > 0 ? "text-emerald-400" : "text-white/20"}`}>
+              {(wordStats.verifiedToday ?? 0) > 0 ? `+${wordStats.verifiedToday}` : "0"} today
+            </div>
           </div>
           <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-orange-500/[0.04] border border-orange-500/[0.12]">
             <div className="text-[7px] lg:text-[8px] font-black text-orange-400/60 uppercase tracking-widest">Unverified</div>
@@ -491,6 +494,9 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
           <div className="flex flex-col items-center gap-1 px-3 py-3 lg:px-8 lg:py-5 rounded-2xl bg-rose-500/[0.03] border border-rose-500/[0.08]">
             <div className="text-[7px] lg:text-[8px] font-black text-rose-400/40 uppercase tracking-widest">Rejected</div>
             <div className="text-lg lg:text-3xl font-black text-rose-400/50 tracking-tighter leading-none">{wordStats.rejected.toLocaleString()}</div>
+            <div className={`text-[7px] lg:text-[9px] font-black uppercase tracking-widest leading-none ${(wordStats.rejectedToday ?? 0) > 0 ? "text-rose-400" : "text-white/20"}`}>
+              {(wordStats.rejectedToday ?? 0) > 0 ? `+${wordStats.rejectedToday}` : "0"} today
+            </div>
           </div>
         </div>
       </div>

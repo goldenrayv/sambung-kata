@@ -1,29 +1,55 @@
 import { prisma } from "@/lib/prisma";
-import { Book, Users, History, Download, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { Book, Users, History, Download, ShieldCheck, ShieldAlert, ShieldX, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import AdminExportButton from "./AdminExportButton";
+import { startOfTodayWIB } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+type Stat = {
+  label: string;
+  value: number;
+  icon: LucideIcon;
+  color: string;
+  bg: string;
+  border: string;
+  today?: number;
+};
+
 export default async function AdminDashboard() {
-  // Fetch stats in parallel
-  const [totalWords, verifiedWords, unverifiedWords, rejectedWords, totalUsers, recentWords, recentUsers] = await Promise.all([
+  const todayStart = startOfTodayWIB();
+
+  // Fetch stats in parallel. "Today" counts use updatedAt as a proxy for the
+  // moment a word was verified/rejected (no dedicated audit log exists).
+  const [
+    totalWords,
+    verifiedWords,
+    unverifiedWords,
+    rejectedWords,
+    totalUsers,
+    recentWords,
+    recentUsers,
+    verifiedToday,
+    rejectedToday,
+  ] = await Promise.all([
     prisma.word.count(),
     prisma.word.count({ where: { isVerified: "verified" } }),
     prisma.word.count({ where: { isVerified: "unverified" } }),
     prisma.word.count({ where: { isVerified: "rejected" } }),
     prisma.user.count(),
     prisma.word.findMany({
-      orderBy: { id: 'desc' }, 
+      orderBy: { id: 'desc' },
       take: 5,
     }),
     prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         take: 5,
-    })
+    }),
+    prisma.word.count({ where: { isVerified: "verified", updatedAt: { gte: todayStart } } }),
+    prisma.word.count({ where: { isVerified: "rejected", updatedAt: { gte: todayStart } } }),
   ]);
 
-  const stats = [
+  const stats: Stat[] = [
     {
       label: "Total Corpus",
       value: totalWords,
@@ -35,6 +61,7 @@ export default async function AdminDashboard() {
     {
       label: "Verified",
       value: verifiedWords,
+      today: verifiedToday,
       icon: ShieldCheck,
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
@@ -51,6 +78,7 @@ export default async function AdminDashboard() {
     {
       label: "Rejected",
       value: rejectedWords,
+      today: rejectedToday,
       icon: ShieldX,
       color: "text-rose-400",
       bg: "bg-rose-500/10",
@@ -94,8 +122,15 @@ export default async function AdminDashboard() {
               <div className={`w-8 h-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center mb-3 shadow-inner`}>
                 <stat.icon className="w-4 h-4" />
               </div>
-              <div className="text-xl font-black text-white mb-0.5 tracking-tight">
-                {stat.value.toLocaleString()}
+              <div className="flex items-baseline gap-1.5 mb-0.5">
+                <div className="text-xl font-black text-white tracking-tight">
+                  {stat.value.toLocaleString()}
+                </div>
+                {typeof stat.today === "number" && (
+                  <span className={`text-[9px] font-black uppercase tracking-tight ${stat.today > 0 ? stat.color : "text-white/30"}`}>
+                    {stat.today > 0 ? `+${stat.today}` : "0"} today
+                  </span>
+                )}
               </div>
               <div className="text-[9px] font-black text-white uppercase tracking-[0.15em] leading-none">
                 {stat.label}

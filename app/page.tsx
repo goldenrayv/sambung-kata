@@ -13,7 +13,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ id: string; username: string; expiresAt: Date; isSuperUser: boolean } | null>(null);
   const [wordCount, setWordCount] = useState(0);
-  const [wordStats, setWordStats] = useState({ verified: 0, unverified: 0, rejected: 0 });
+  const [wordStats, setWordStats] = useState({ verified: 0, unverified: 0, rejected: 0, verifiedToday: 0, rejectedToday: 0 });
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [tacticalSuffixes, setTacticalSuffixes] = useState<any[]>([]);
 

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma as prismaInstance } from "@/lib/prisma";
 const prisma = prismaInstance as any;
 import { revalidatePath } from "next/cache";
+import { startOfTodayWIB } from "@/lib/utils";
 
 
 
@@ -159,13 +160,18 @@ export async function toggleWordVerification(id: string, currentStatus: string) 
 // ---------------------------------------------------------------------------
 
 export async function getAdminWordStats() {
-  const [verified, unverified, rejected] = await Promise.all([
+  // "Today" counts use updatedAt as a proxy for the verify/reject moment
+  // (no dedicated audit log exists). Day boundary is WIB (UTC+7).
+  const todayStart = startOfTodayWIB();
+  const [verified, unverified, rejected, verifiedToday, rejectedToday] = await Promise.all([
     prisma.word.count({ where: { isVerified: "verified" } }),
     prisma.word.count({ where: { isVerified: "unverified" } }),
     prisma.word.count({ where: { isVerified: "rejected" } }),
+    prisma.word.count({ where: { isVerified: "verified", updatedAt: { gte: todayStart } } }),
+    prisma.word.count({ where: { isVerified: "rejected", updatedAt: { gte: todayStart } } }),
   ]);
-  
-  return { verified, unverified, rejected };
+
+  return { verified, unverified, rejected, verifiedToday, rejectedToday };
 }
 
 export async function bulkVerifyWords(words: string[]) {

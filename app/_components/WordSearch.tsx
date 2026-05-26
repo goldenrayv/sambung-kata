@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff, ArrowDownAZ, ArrowDownNarrowWide, ArrowDownWideNarrow, Crosshair } from "lucide-react";
+import { BookOpen, X, Command, Layout, Columns, Beaker, ShieldOff, Zap, Swords, EyeOff, ArrowDownAZ, ArrowDownNarrowWide, ArrowDownWideNarrow, Crosshair, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import WordCard from "./WordCard";
 import { deleteWord, toggleWordVerification } from "@/app/actions";
@@ -61,6 +61,21 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
       localStorage.setItem("sk_hidden_groups", JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  // Per-user priority: pinned suffix groups float to the top of the prefix results,
+  // in the order they were pinned. Persisted per browser like the other preferences.
+  const [isPriorityMode, setIsPriorityMode] = useState(false);
+  const [prioritySuffixes, setPrioritySuffixes] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("sk_priority_suffixes") || "[]"); } catch { return []; }
+  });
+  const togglePriority = (suffix: string) => {
+    setPrioritySuffixes(prev => {
+      const next = prev.includes(suffix) ? prev.filter(s => s !== suffix) : [...prev, suffix];
+      localStorage.setItem("sk_priority_suffixes", JSON.stringify(next));
       return next;
     });
   };
@@ -401,13 +416,20 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
     Object.keys(groupedPrefix).sort((a, b) => {
       if (a === "Other") return 1;
       if (b === "Other") return -1;
+      // User-pinned priority suffixes float to the top, in the order they were pinned.
+      const pa = prioritySuffixes.indexOf(a.replace(/^-/, ""));
+      const pb = prioritySuffixes.indexOf(b.replace(/^-/, ""));
+      const aPinned = pa !== -1, bPinned = pb !== -1;
+      if (aPinned && bPinned) return pa - pb;
+      if (aPinned) return -1;
+      if (bPinned) return 1;
       const groupA = groupedPrefix[a];
       const groupB = groupedPrefix[b];
       if (groupA.tier !== groupB.tier) return groupA.tier - groupB.tier;
       if (a.length !== b.length) return b.length - a.length;
       return a.localeCompare(b);
     }),
-  [groupedPrefix]);
+  [groupedPrefix, prioritySuffixes]);
 
   const groupedSuffix = useMemo(() => {
     const acc = suffixData.results.reduce((acc: Record<string, any[]>, wordObj: any) => {
@@ -639,6 +661,22 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
             </button>
 
             <button
+              onClick={() => searchMode === "fast" && setIsPriorityMode(!isPriorityMode)}
+              disabled={searchMode !== "fast"}
+              title={searchMode !== "fast" ? "Priority — Fast mode only" : (isPriorityMode ? "Priority: ON — tap a suffix chip to pin it to the top" : "Priority: OFF")}
+              className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
+                searchMode !== "fast"
+                  ? "bg-white/[0.02] border-white/5 text-white/15 cursor-not-allowed"
+                  : isPriorityMode
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white active:bg-white/10"
+              }`}
+            >
+              <Star className="w-3.5 h-3.5 md:w-3 md:h-3" />
+              Priority
+            </button>
+
+            <button
               onClick={cycleSortByLength}
               title={`Sort: ${sortByLength === "none" ? "A-Z (alphabetical)" : sortByLength === "asc" ? "Shortest first" : "Longest first"} — click to cycle`}
               className={`flex items-center gap-1.5 px-3 py-2 md:px-2.5 md:py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all shrink-0 ${
@@ -739,19 +777,22 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
         <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
           {isTrapMode && (
           <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin lg:flex-wrap lg:overflow-visible lg:pb-0">
-            {(isBlockMode || isHideMode) && (
-              <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
-                {isHideMode ? "Hide:" : "Block:"}
+            {(isBlockMode || isHideMode || isPriorityMode) && (
+              <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isPriorityMode ? "text-amber-400/60" : isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
+                {isPriorityMode ? "Priority:" : isHideMode ? "Hide:" : "Block:"}
               </span>
             )}
             {tacticalSuffixes.filter(ts => isBrutalMode || ts.suffix.length <= 3).map((ts) => {
               const isBlocked = blockedSuffixes.has(ts.suffix);
               const isHidden = hiddenSuffixGroups.has(`-${ts.suffix}`);
+              const isPinned = prioritySuffixes.includes(ts.suffix);
               return (
                 <button
                   key={ts.id}
                   onClick={() => {
-                    if (isHideMode) {
+                    if (isPriorityMode) {
+                      togglePriority(ts.suffix);
+                    } else if (isHideMode) {
                       toggleHideGroup(`-${ts.suffix}`);
                     } else if (isBlockMode) {
                       setBlockedSuffixes(prev => {
@@ -763,18 +804,25 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
                       setSearch(ts.suffix);
                     }
                   }}
-                  className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
+                  className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
                     isHidden
                       ? "bg-sky-500/5 border border-sky-500/20 text-sky-400/30 line-through"
                       : isBlocked
                         ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
-                        : isHideMode
-                          ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/5 hover:text-sky-400/30"
-                          : isBlockMode
-                            ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
-                            : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
+                        : isPriorityMode
+                          ? isPinned
+                            ? "bg-amber-500/20 border border-amber-500/50 text-amber-300"
+                            : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-amber-500/15 hover:border-amber-500/40 hover:text-amber-400"
+                          : isHideMode
+                            ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/5 hover:text-sky-400/30"
+                            : isBlockMode
+                              ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
+                              : isPinned
+                                ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-white"
+                                : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
                   }`}
                 >
+                  {isPinned && <Star className="w-2.5 h-2.5 fill-current" />}
                   -{ts.suffix}
                 </button>
               );

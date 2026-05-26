@@ -1,9 +1,11 @@
-import { 
-  getAllWordsAdmin, 
-  getAllWordCountAdmin, 
-  deleteWord, 
+import {
+  getAllWordsAdmin,
+  getAllWordCountAdmin,
+  deleteWord,
+  restoreWord,
   toggleWordVerification,
-  getTacticalSuffixes
+  getTacticalSuffixes,
+  type WordStatusFilter
 } from "@/app/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +23,8 @@ import {
   Zap,
   ShieldCheck,
   ShieldAlert,
-  Target
+  Target,
+  RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 import AdminWordManager from "./AdminWordManager";
@@ -34,10 +37,12 @@ const PAGE_SIZE = 50;
 export default async function AdminWordsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; status?: string }>;
 }) {
-  const { page: pageParam, q: search } = await searchParams;
+  const { page: pageParam, q: search, status: statusParam } = await searchParams;
   const page = Math.max(1, parseInt(pageParam ?? "1", 10));
+  const status: WordStatusFilter =
+    statusParam === "rejected" || statusParam === "all" ? statusParam : "active";
 
   let words: any[] = [];
   let totalCount = 0;
@@ -46,8 +51,8 @@ export default async function AdminWordsPage({
 
   try {
     const [fetchedWords, count, suffixes] = await Promise.all([
-      getAllWordsAdmin(page, PAGE_SIZE, search),
-      getAllWordCountAdmin(search),
+      getAllWordsAdmin(page, PAGE_SIZE, search, status),
+      getAllWordCountAdmin(search, status),
       getTacticalSuffixes()
     ]);
     words = fetchedWords;
@@ -59,6 +64,27 @@ export default async function AdminWordsPage({
   }
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Build a /admin/words URL preserving the current search + status, with optional overrides.
+  const buildHref = (overrides: { page?: number; status?: WordStatusFilter } = {}) => {
+    const sp = new URLSearchParams();
+    const targetPage = overrides.page ?? page;
+    const targetStatus = overrides.status ?? status;
+    if (targetPage > 1) sp.set("page", String(targetPage));
+    if (targetStatus !== "active") sp.set("status", targetStatus);
+    if (search) sp.set("q", search);
+    const qs = sp.toString();
+    return `/admin/words${qs ? `?${qs}` : ""}`;
+  };
+
+  const statusTabs: { key: WordStatusFilter; label: string }[] = [
+    { key: "active", label: "Active" },
+    { key: "rejected", label: "Rejected" },
+    { key: "all", label: "All" },
+  ];
+
+  const subtitleNoun =
+    status === "rejected" ? "Rejected Terms" : status === "all" ? "Total Terms" : "Active Terms Indexed";
 
   // Helper to find the first matching tactical suffix (already sorted by length)
   const getTacticalMatch = (wordStr: string) => {
@@ -74,7 +100,7 @@ export default async function AdminWordsPage({
             Word Repository
           </h1>
           <p className="text-white/60 text-[10px] font-black tracking-widest uppercase italic">
-            {totalCount.toLocaleString()} {search ? `matches: "${search}"` : "Active Terms Indexed"}
+            {totalCount.toLocaleString()} {search ? `matches: "${search}"` : subtitleNoun}
           </p>
         </div>
         <div className="flex items-center gap-3 text-white/70 text-xs font-mono bg-white/5 px-4 py-2 rounded-full border border-white/5">
@@ -105,6 +131,29 @@ export default async function AdminWordsPage({
             </h2>
         </div>
 
+        {/* Status filter — Active (default) / Rejected (soft-deleted) / All */}
+        <div className="flex flex-wrap items-center gap-2">
+          {statusTabs.map((tab) => {
+            const isActiveTab = status === tab.key;
+            return (
+              <Link
+                key={tab.key}
+                href={buildHref({ status: tab.key, page: 1 })}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all",
+                  isActiveTab
+                    ? tab.key === "rejected"
+                      ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                      : "bg-orange-500/10 border-orange-500/30 text-orange-400"
+                    : "bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20"
+                )}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+
         <Card className="bg-neutral-950 border-white/5 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm">
           <AdminWordManager />
 
@@ -122,6 +171,7 @@ export default async function AdminWordsPage({
                 {words.length > 0 ? (
                   words.map((word) => {
                     const tacticalMatch = getTacticalMatch(word.word);
+                    const isRejected = word.isVerified === "rejected";
                     return (
                       <TableRow
                         key={word.id}
@@ -134,7 +184,7 @@ export default async function AdminWordsPage({
                                 </div>
                                 <span className={cn(
                                   "text-xs font-black tracking-widest uppercase font-mono transition-colors",
-                                  word.isVerified === "verified" ? "text-emerald-400" : "text-white"
+                                  word.isVerified === "verified" ? "text-emerald-400" : isRejected ? "text-white/40 line-through" : "text-white"
                                 )}>
                                     {word.word}
                                 </span>
@@ -147,6 +197,15 @@ export default async function AdminWordsPage({
                            </div>
                         </TableCell>
                         <TableCell className="px-6 py-3">
+                          {isRejected ? (
+                            <Badge
+                              variant="outline"
+                              className="h-6 px-2 inline-flex items-center bg-rose-500/10 text-rose-400 border-rose-500/20 rounded-md text-[9px] font-black tracking-widest uppercase"
+                            >
+                              <Trash2 className="w-3 h-3 mr-1.5" />
+                              Rejected
+                            </Badge>
+                          ) : (
                           <form action={async () => {
                             'use server';
                             await toggleWordVerification(word.id, word.isVerified);
@@ -171,6 +230,7 @@ export default async function AdminWordsPage({
                               </Button>
                             )}
                           </form>
+                          )}
                         </TableCell>
                         <TableCell className="px-6 py-3">
                            <Badge
@@ -184,6 +244,21 @@ export default async function AdminWordsPage({
                             </Badge>
                         </TableCell>
                         <TableCell className="px-6 py-3 text-right">
+                          {isRejected ? (
+                          <form action={async () => {
+                            'use server';
+                            await restoreWord(word.id);
+                          }}>
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              className="h-7 px-2.5 rounded-lg text-[10px] font-black uppercase tracking-[0.1em] transition-all bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20"
+                            >
+                                <RotateCcw className="w-3 h-3 mr-1.5" />
+                                Restore
+                            </Button>
+                          </form>
+                          ) : (
                           <form action={async () => {
                             'use server';
                             await deleteWord(word.id);
@@ -196,13 +271,14 @@ export default async function AdminWordsPage({
                                 <Trash2 className="w-3 h-3" />
                             </Button>
                           </form>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="px-8 py-32 text-center text-white/40">
+                    <TableCell colSpan={4} className="px-8 py-32 text-center text-white/40">
                         <div className="flex flex-col items-center gap-3 opacity-20">
                             <Search className="w-12 h-12" />
                             <span className="italic font-mono text-sm tracking-widest uppercase">Null Results In Repository</span>
@@ -227,8 +303,8 @@ export default async function AdminWordsPage({
               </div>
               
               <div className="flex gap-1.5">
-                <Link 
-                    href={page > 1 ? `/admin/words?page=${page - 1}${search ? `&q=${search}` : ""}` : "#"}
+                <Link
+                    href={page > 1 ? buildHref({ page: page - 1 }) : "#"}
                     className={cn(page <= 1 && "pointer-events-none opacity-10")}
                 >
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/5 rounded-lg border border-white/5">
@@ -242,8 +318,8 @@ export default async function AdminWordsPage({
                     <span className="text-white/60">{totalPages}</span>
                 </div>
 
-                <Link 
-                    href={page < totalPages ? `/admin/words?page=${page + 1}${search ? `&q=${search}` : ""}` : "#"}
+                <Link
+                    href={page < totalPages ? buildHref({ page: page + 1 }) : "#"}
                     className={cn(page >= totalPages && "pointer-events-none opacity-10")}
                 >
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/5 rounded-lg border border-white/5">

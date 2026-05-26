@@ -41,13 +41,23 @@ export async function addWord(formData: FormData): Promise<void> {
   }
 }
 
-export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, search?: string) {
+export type WordStatusFilter = "active" | "rejected" | "all";
+
+/** Verification clause for the repository list.
+ *  "active" = everything except soft-deleted, "rejected" = only soft-deleted, "all" = no filter. */
+function wordStatusWhere(status: WordStatusFilter) {
+  if (status === "rejected") return { isVerified: "rejected" };
+  if (status === "all") return {};
+  return { isVerified: { not: "rejected" } };
+}
+
+export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, search?: string, status: WordStatusFilter = "active") {
   return prisma.word.findMany({
     where: {
-      isVerified: { not: "rejected" },
+      ...wordStatusWhere(status),
       ...(search ? {
         word: {
-          contains: search,
+          startsWith: search,
           mode: 'insensitive'
         }
       } : {})
@@ -58,13 +68,13 @@ export async function getAllWordsAdmin(page: number = 1, pageSize: number = 50, 
   });
 }
 
-export async function getAllWordCountAdmin(search?: string): Promise<number> {
+export async function getAllWordCountAdmin(search?: string, status: WordStatusFilter = "active"): Promise<number> {
   return prisma.word.count({
     where: {
-      isVerified: { not: "rejected" },
+      ...wordStatusWhere(status),
       ...(search ? {
         word: {
-          contains: search,
+          startsWith: search,
           mode: 'insensitive'
         }
       } : {})
@@ -141,6 +151,23 @@ export async function deleteWord(id: string) {
   } catch (error: any) {
     console.error("Delete failed:", error);
     return { success: false, error: error.message || "Failed to delete word" };
+  }
+}
+
+export async function restoreWord(id: string) {
+  try {
+    // Bring a soft-deleted word back into circulation as unverified.
+    await prisma.word.update({
+      where: { id },
+      data: { isVerified: "unverified" }
+    });
+    revalidatePath("/admin/words");
+    revalidatePath("/admin");
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Restore failed:", error);
+    return { success: false, error: error.message || "Failed to restore word" };
   }
 }
 

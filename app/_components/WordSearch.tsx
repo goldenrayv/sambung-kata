@@ -492,6 +492,54 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
   const effectiveShowSuffix = searchMode === "normal" ? false : showSuffix;
   const hasAnySearch = searchMode === "fast" ? !!search : (!!prefixSearch || !!suffixSearch);
 
+  // Single chip renderer shared by the mobile flat row and the desktop length-grouped layout,
+  // so both views stay in sync as modes / pinned state change.
+  const renderChip = (ts: any) => {
+    const isBlocked = blockedSuffixes.has(ts.suffix);
+    const isHidden = hiddenSuffixGroups.has(`-${ts.suffix}`);
+    const isPinned = prioritySuffixes.includes(ts.suffix);
+    return (
+      <button
+        key={ts.id}
+        onClick={() => {
+          if (isPriorityMode) {
+            togglePriority(ts.suffix);
+          } else if (isHideMode) {
+            toggleHideGroup(`-${ts.suffix}`);
+          } else if (isBlockMode) {
+            setBlockedSuffixes(prev => {
+              const next = new Set(prev);
+              isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
+              return next;
+            });
+          } else {
+            setSearch(ts.suffix);
+          }
+        }}
+        className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
+          isHidden
+            ? "bg-sky-500/5 border border-sky-500/20 text-sky-400/30 line-through"
+            : isBlocked
+              ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
+              : isPriorityMode
+                ? isPinned
+                  ? "bg-amber-500/20 border border-amber-500/50 text-amber-300"
+                  : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-amber-500/15 hover:border-amber-500/40 hover:text-amber-400"
+                : isHideMode
+                  ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/5 hover:text-sky-400/30"
+                  : isBlockMode
+                    ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
+                    : isPinned
+                      ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-white"
+                      : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
+        }`}
+      >
+        {isPinned && <Star className="w-2.5 h-2.5 fill-current" />}
+        -{ts.suffix}
+      </button>
+    );
+  };
+
   return (
     <div className="w-full relative z-10 pb-20">
 
@@ -775,60 +823,53 @@ export default function WordSearch({ userId, wordCount, wordStats, isSuperUser, 
       {/* Suffix chips + search history — fast mode only */}
       {searchMode === "fast" && (
         <div className="max-w-4xl mx-auto px-0 pt-3 pb-1 flex flex-col gap-2">
-          {isTrapMode && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin lg:flex-wrap lg:overflow-visible lg:pb-0">
-            {(isBlockMode || isHideMode || isPriorityMode) && (
+          {isTrapMode && (() => {
+            const visibleSuffixes = tacticalSuffixes.filter(ts => isBrutalMode || ts.suffix.length <= 3);
+            const fiveLetters = visibleSuffixes.filter((ts: any) => ts.suffix.length === 5);
+            const fourLetters = visibleSuffixes.filter((ts: any) => ts.suffix.length === 4);
+            const restSuffixes = visibleSuffixes.filter((ts: any) => ts.suffix.length !== 5 && ts.suffix.length !== 4);
+            const modeLabel = (isBlockMode || isHideMode || isPriorityMode) ? (
               <span className={`px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 ${isPriorityMode ? "text-amber-400/60" : isHideMode ? "text-sky-400/60" : "text-rose-400/60"}`}>
                 {isPriorityMode ? "Priority:" : isHideMode ? "Hide:" : "Block:"}
               </span>
-            )}
-            {tacticalSuffixes.filter(ts => isBrutalMode || ts.suffix.length <= 3).map((ts) => {
-              const isBlocked = blockedSuffixes.has(ts.suffix);
-              const isHidden = hiddenSuffixGroups.has(`-${ts.suffix}`);
-              const isPinned = prioritySuffixes.includes(ts.suffix);
-              return (
-                <button
-                  key={ts.id}
-                  onClick={() => {
-                    if (isPriorityMode) {
-                      togglePriority(ts.suffix);
-                    } else if (isHideMode) {
-                      toggleHideGroup(`-${ts.suffix}`);
-                    } else if (isBlockMode) {
-                      setBlockedSuffixes(prev => {
-                        const next = new Set(prev);
-                        isBlocked ? next.delete(ts.suffix) : next.add(ts.suffix);
-                        return next;
-                      });
-                    } else {
-                      setSearch(ts.suffix);
-                    }
-                  }}
-                  className={`shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black transition-all duration-300 active:scale-95 uppercase font-mono tracking-tighter ${
-                    isHidden
-                      ? "bg-sky-500/5 border border-sky-500/20 text-sky-400/30 line-through"
-                      : isBlocked
-                        ? "bg-rose-500/20 border border-rose-500/40 text-rose-400 line-through"
-                        : isPriorityMode
-                          ? isPinned
-                            ? "bg-amber-500/20 border border-amber-500/50 text-amber-300"
-                            : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-amber-500/15 hover:border-amber-500/40 hover:text-amber-400"
-                          : isHideMode
-                            ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500/5 hover:text-sky-400/30"
-                            : isBlockMode
-                              ? "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-400"
-                              : isPinned
-                                ? "bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500 hover:text-white"
-                                : "bg-sky-500/10 border border-sky-500/30 text-sky-400 hover:bg-sky-500 hover:text-white"
-                  }`}
-                >
-                  {isPinned && <Star className="w-2.5 h-2.5 fill-current" />}
-                  -{ts.suffix}
-                </button>
-              );
-            })}
-          </div>
-          )}
+            ) : null;
+            const lengthLabel = (n: number) => (
+              <span className="px-2 py-1 text-[9px] font-black uppercase tracking-widest self-center shrink-0 text-sky-400/40">
+                {n} letters
+              </span>
+            );
+            return (
+              <>
+                {/* Mobile: flat scrollable row (unchanged) */}
+                <div className="lg:hidden flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+                  {modeLabel}
+                  {visibleSuffixes.map(renderChip)}
+                </div>
+
+                {/* Desktop: length-grouped (5 & 4 get labels, shorter stay in a flat row) */}
+                <div className="hidden lg:flex lg:flex-col gap-2">
+                  {modeLabel}
+                  {fiveLetters.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {lengthLabel(5)}
+                      {fiveLetters.map(renderChip)}
+                    </div>
+                  )}
+                  {fourLetters.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {lengthLabel(4)}
+                      {fourLetters.map(renderChip)}
+                    </div>
+                  )}
+                  {restSuffixes.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {restSuffixes.map(renderChip)}
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })()}
 
           {searchHistory.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
